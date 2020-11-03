@@ -24,7 +24,7 @@ done
 if [ $(eval $curl_command) -eq 200 ]
 then
     echo "Setting up plugin configuration"
-    curl -s -X POST -H "Content-Type: application/json" --data '{"name":"snmp-producer","config":{"listen_port":"10161","topic":"fm_snmp","connector.class":"com.github.jcustenborder.kafka.connect.snmp.SnmpTrapSourceConnector","key.converter.schemas.enabled":"false","value.converter.schemas.enabled":"false"}}' $url
+    curl -s -X POST -H "Content-Type: application/json" --data '{"name":"snmp-producer","config":{"listen.port":"162","topic":"fm_snmp","connector.class":"com.github.jcustenborder.kafka.connect.snmp.SnmpTrapSourceConnector","key.converter.schemas.enabled":"false","value.converter.schemas.enabled":"false"}}' $url
     echo -e "\nFinished setting up!"
 else
     echo "Failed to connect to kafka-connect!"
