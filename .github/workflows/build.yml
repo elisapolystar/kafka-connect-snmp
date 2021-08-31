@@ -27,7 +27,6 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: kafka-connect-snmp-latest.tgz
-          path: kafka-connect-snmp-latest.tgz
 
   build-image:
     needs: build
@@ -38,7 +37,6 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: kafka-connect-snmp-latest.tgz
-          path: kafka-connect-snmp-latest.tgz
       - name: mkdir
         run: mkdir -p kafka-connect-snmp
       - run: ls -lah
