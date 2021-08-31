@@ -5,13 +5,14 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+    types: [review_requested, ready_for_review]
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  build-tar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -30,7 +31,7 @@ jobs:
           path: kafka-connect-snmp-latest.tgz
 
   build-image:
-    needs: build
+    needs: build-tar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
