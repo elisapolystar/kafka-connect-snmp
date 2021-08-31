@@ -4,7 +4,7 @@ WORKDIR /tmp/kafka-connect
 
 COPY kafka-connect-snmp-latest.tgz kafka-connect-snmp.tgz
 RUN mkdir kafka-connect-snmp
-RUN tar -xf kafka-connect-snmp.tgz -C kafka-connect-snmp
+RUN tar -xf kafka-connect-snmp.tgz -C kafka-connect-snmp/
 
 FROM quay.io/strimzi/kafka:0.24.0-kafka-2.8.0
 
