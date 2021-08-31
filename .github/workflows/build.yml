@@ -39,6 +39,9 @@ jobs:
         with:
           name: kafka-connect-snmp-latest.tgz
           path: kafka-connect-snmp-latest.tgz
+      - name: Extract gz
+        run: mkdir -p kafka-connect-snmp && tar -xvzf kafka-connect-snmp-latest.tgz -C kafka-connect-snmp/
+      - run: ls -lah
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
