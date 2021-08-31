@@ -1,15 +1,9 @@
-name: Build
+name: "tagged-release"
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-    types: [review_requested, ready_for_review]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    tags:
+      - "v*"
 
 jobs:
   build-tar:
@@ -30,7 +24,7 @@ jobs:
           name: kafka-connect-snmp-latest.tgz
           path: kafka-connect-snmp-latest.tgz
 
-  build-image:
+  build-and-publish-image:
     needs: build-tar
     runs-on: ubuntu-latest
     steps:
