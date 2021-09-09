@@ -1,12 +1,13 @@
 /**
+ * Copyright © 2021 Elisa Oyj
  * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +31,7 @@ public class SnmpTrapSourceConnectorConfigTest {
 
   public static String listeningPort = "11111";
   public static int batchSize = 10;
+
   public static Map<String, String> settings() {
     return ImmutableMap.of(
         SnmpTrapSourceConnectorConfig.LISTEN_PORT_CONF, listeningPort,
@@ -50,9 +52,9 @@ public class SnmpTrapSourceConnectorConfigTest {
   @Test
   public void shouldConvertLists() {
     Map<String, String> m = Map.of(
-            SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
-            SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5,SHA",
-            SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "DES3"
+        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
+        SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5,SHA",
+        SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "DES3"
     );
     SnmpTrapSourceConnectorConfig c = new SnmpTrapSourceConnectorConfig(m);
     assertEquals(Set.of(AuthenticationProtocol.MD5, AuthenticationProtocol.SHA), c.authenticationProtocols);
@@ -60,8 +62,8 @@ public class SnmpTrapSourceConnectorConfigTest {
 
 
     m = Map.of(
-            SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
-            SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5"
+        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
+        SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5"
     );
     c = new SnmpTrapSourceConnectorConfig(m);
     assertEquals(Set.of(AuthenticationProtocol.MD5), c.authenticationProtocols);
@@ -71,9 +73,9 @@ public class SnmpTrapSourceConnectorConfigTest {
   @Test
   public void shouldNotAcceptInvalidListValues() {
     Map<String, String> m = Map.of(
-            SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
-            SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "aaa,bbb",
-            SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "ccc"
+        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
+        SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "aaa,bbb",
+        SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "ccc"
     );
     assertThrows(org.apache.kafka.common.config.ConfigException.class, () -> new SnmpTrapSourceConnectorConfig(m));
 

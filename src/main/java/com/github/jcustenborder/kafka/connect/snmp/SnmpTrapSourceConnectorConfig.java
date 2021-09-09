@@ -1,4 +1,5 @@
 /**
+ * Copyright © 2021 Elisa Oyj
  * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,7 +77,6 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   public final Set<PrivacyProtocol> privacyProtocols;
 
 
-
   public SnmpTrapSourceConnectorConfig(Map<String, String> parsedConfig) {
     super(conf(), parsedConfig);
 
@@ -88,11 +88,11 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
     this.batchSize = this.getInt(BATCH_SIZE_CONF);
     this.pollBackoffMs = this.getLong(POLL_BACKOFF_MS_CONF);
     this.authenticationProtocols = this.getList(AUTHENTICATION_PROTOCOLS)
-            .stream().map((s) -> AuthenticationProtocol.valueOf(s.toUpperCase()))
-            .collect(Collectors.toSet());
+        .stream().map((s) -> AuthenticationProtocol.valueOf(s.toUpperCase()))
+        .collect(Collectors.toSet());
     this.privacyProtocols = this.getList(PRIVACY_PROTOCOLS)
-            .stream().map((s) -> PrivacyProtocol.valueOf(s.toUpperCase()))
-            .collect(Collectors.toSet());
+        .stream().map((s) -> PrivacyProtocol.valueOf(s.toUpperCase()))
+        .collect(Collectors.toSet());
   }
 
   public static ConfigDef conf() {
@@ -100,15 +100,15 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
     String[] privProtocols = Arrays.stream(PrivacyProtocol.values()).map(Enum::toString).toArray(String[]::new);
 
     return new ConfigDef()
-            .define(TOPIC_CONF, Type.STRING, Importance.HIGH, TOPIC_DOC)
-            .define(LISTEN_ADDRESS_CONF, Type.STRING, LISTEN_ADDRESS_DEFAULT, Importance.LOW, LISTEN_ADDRESS_DOC)
-            .define(LISTEN_PORT_CONF, Type.INT, LISTEN_PORT_DEFAULT, Validators.validPort(161, 65535), Importance.LOW, LISTEN_PORT_DOC)
-            .define(LISTEN_PROTOCOL_CONF, Type.STRING, LISTEN_PROTOCOL_DEFAULT, ConfigDef.ValidString.in("UDP", "TCP"), Importance.LOW, LISTEN_PROTOCOL_DOC)
-            .define(DISPATCHER_THREAD_POOL_SIZE_CONF, Type.INT, DISPATCHER_THREAD_POOL_SIZE_DEFAULT, ConfigDef.Range.between(1, 100), Importance.LOW, DISPATCHER_THREAD_POOL_SIZE_DOC)
-            .define(BATCH_SIZE_CONF, Type.INT, BATCH_SIZE_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, BATCH_SIZE_DOC)
-            .define(POLL_BACKOFF_MS_CONF, Type.LONG, POLL_BACKOFF_MS_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, POLL_BACKOFF_MS_DOC)
-            .define(AUTHENTICATION_PROTOCOLS, Type.LIST, AUTHENTICATION_PROTOCOLS_DEFAULT,  ConfigDef.ValidList.in( authProtocols ), Importance.MEDIUM, AUTHENTICATION_PROTOCOLS_DOC)
-            .define(PRIVACY_PROTOCOLS, Type.LIST, PRIVACY_PROTOCOLS_DEFAULT, ConfigDef.ValidList.in( privProtocols ), Importance.MEDIUM, PRIVACY_PROTOCOLS_DOC);
+        .define(TOPIC_CONF, Type.STRING, Importance.HIGH, TOPIC_DOC)
+        .define(LISTEN_ADDRESS_CONF, Type.STRING, LISTEN_ADDRESS_DEFAULT, Importance.LOW, LISTEN_ADDRESS_DOC)
+        .define(LISTEN_PORT_CONF, Type.INT, LISTEN_PORT_DEFAULT, Validators.validPort(161, 65535), Importance.LOW, LISTEN_PORT_DOC)
+        .define(LISTEN_PROTOCOL_CONF, Type.STRING, LISTEN_PROTOCOL_DEFAULT, ConfigDef.ValidString.in("UDP", "TCP"), Importance.LOW, LISTEN_PROTOCOL_DOC)
+        .define(DISPATCHER_THREAD_POOL_SIZE_CONF, Type.INT, DISPATCHER_THREAD_POOL_SIZE_DEFAULT, ConfigDef.Range.between(1, 100), Importance.LOW, DISPATCHER_THREAD_POOL_SIZE_DOC)
+        .define(BATCH_SIZE_CONF, Type.INT, BATCH_SIZE_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, BATCH_SIZE_DOC)
+        .define(POLL_BACKOFF_MS_CONF, Type.LONG, POLL_BACKOFF_MS_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, POLL_BACKOFF_MS_DOC)
+        .define(AUTHENTICATION_PROTOCOLS, Type.LIST, AUTHENTICATION_PROTOCOLS_DEFAULT, ConfigDef.ValidList.in(authProtocols), Importance.MEDIUM, AUTHENTICATION_PROTOCOLS_DOC)
+        .define(PRIVACY_PROTOCOLS, Type.LIST, PRIVACY_PROTOCOLS_DEFAULT, ConfigDef.ValidList.in(privProtocols), Importance.MEDIUM, PRIVACY_PROTOCOLS_DOC);
   }
 
 }

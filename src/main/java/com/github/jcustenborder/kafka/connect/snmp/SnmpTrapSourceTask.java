@@ -1,4 +1,5 @@
 /**
+ * Copyright © 2021 Elisa Oyj
  * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,175 +57,175 @@ import java.util.Map;
 import java.util.Set;
 
 public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
-    static final Logger log = LoggerFactory.getLogger(SnmpTrapSourceTask.class);
-    private SecurityProtocols securityProtocols;
+  static final Logger log = LoggerFactory.getLogger(SnmpTrapSourceTask.class);
+  private SecurityProtocols securityProtocols;
 
-    @Override
-    public String version() {
-        return VersionUtil.getVersion();
+  @Override
+  public String version() {
+    return VersionUtil.getVersion();
+  }
+
+  SnmpTrapSourceConnectorConfig config;
+  AbstractTransportMapping<?> transport;
+  ThreadPool threadPool;
+  MessageDispatcher messageDispatcher;
+  private Snmp snmp;
+  PDUConverter converter;
+  Time time = new SystemTime();
+  private SourceRecordConcurrentLinkedDeque recordBuffer;
+
+  @Override
+  public void start(Map<String, String> settings) {
+    this.config = new SnmpTrapSourceConnectorConfig(settings);
+    this.converter = new PDUConverter(this.time, config);
+    this.recordBuffer = new SourceRecordConcurrentLinkedDeque(this.config.batchSize, 0);
+    log.info("start() - Setting listen address with {} on {}:{}", this.config.listenProtocol, this.config.listenAddress, this.config.listenPort);
+
+    this.transport = setupTransport(this.config.listenAddress, this.config.listenProtocol, this.config.listenPort);
+
+    log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
+    this.threadPool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
+    this.messageDispatcher = createMessageDispatcher(this.threadPool);
+    this.securityProtocols = setupSecurityProtocols(config.authenticationProtocols, config.privacyProtocols);
+
+    try {
+      this.transport.listen();
+    } catch (IOException e) {
+      throw new ConnectException("Exception thrown while calling transport.listen()", e);
     }
 
-    SnmpTrapSourceConnectorConfig config;
-    AbstractTransportMapping<?> transport;
-    ThreadPool threadPool;
-    MessageDispatcher messageDispatcher;
-    private Snmp snmp;
-    PDUConverter converter;
-    Time time = new SystemTime();
-    private SourceRecordConcurrentLinkedDeque recordBuffer;
+    this.snmp = new Snmp(this.messageDispatcher, this.transport);
+    this.snmp.addCommandResponder(this);
 
-    @Override
-    public void start(Map<String, String> settings) {
-        this.config = new SnmpTrapSourceConnectorConfig(settings);
-        this.converter = new PDUConverter(this.time, config);
-        this.recordBuffer = new SourceRecordConcurrentLinkedDeque(this.config.batchSize, 0);
-        log.info("start() - Setting listen address with {} on {}:{}", this.config.listenProtocol, this.config.listenAddress, this.config.listenPort);
+    setupMpv3(this.snmp, this.securityProtocols);
 
-        this.transport = setupTransport(this.config.listenAddress, this.config.listenProtocol, this.config.listenPort);
+  }
 
-        log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
-        this.threadPool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
-        this.messageDispatcher = createMessageDispatcher(this.threadPool);
-        this.securityProtocols = setupSecurityProtocols(config.authenticationProtocols, config.privacyProtocols);
 
-        try {
-            this.transport.listen();
-        } catch (IOException e) {
-            throw new ConnectException("Exception thrown while calling transport.listen()", e);
-        }
+  @Override
+  public List<SourceRecord> poll() throws InterruptedException {
+    List<SourceRecord> records = new ArrayList<>(this.config.batchSize);
 
-        this.snmp = new Snmp(this.messageDispatcher, this.transport);
-        this.snmp.addCommandResponder(this);
-
-        setupMpv3(this.snmp, this.securityProtocols);
-
+    while (!this.recordBuffer.drain(records)) {
+      log.trace("poll() - no records found sleeping {} ms.", this.config.pollBackoffMs);
+      this.time.sleep(this.config.pollBackoffMs);
     }
 
+    log.debug("poll() - returning {} record(s).", records.size());
+    return records;
+  }
 
-    @Override
-    public List<SourceRecord> poll() throws InterruptedException {
-        List<SourceRecord> records = new ArrayList<>(this.config.batchSize);
+  @Override
+  public void stop() {
+    log.info("stop() - stopping threadpool");
 
-        while (!this.recordBuffer.drain(records)) {
-            log.trace("poll() - no records found sleeping {} ms.", this.config.pollBackoffMs);
-            this.time.sleep(this.config.pollBackoffMs);
-        }
-
-        log.debug("poll() - returning {} record(s).", records.size());
-        return records;
+    if (this.threadPool != null) {
+      this.threadPool.stop();
     }
 
-    @Override
-    public void stop() {
-        log.info("stop() - stopping threadpool");
-
-        if (this.threadPool != null) {
-            this.threadPool.stop();
-        }
-
-        log.info("stop() - closing transport.");
-        try {
-            this.transport.close();
-        } catch (IOException e) {
-            log.error("Exception thrown while closing transport.", e);
-        }
-
+    log.info("stop() - closing transport.");
+    try {
+      this.transport.close();
+    } catch (IOException e) {
+      log.error("Exception thrown while closing transport.", e);
     }
 
-    @Override
-    public void processPdu(CommandResponderEvent event) {
-        log.trace("processPdu() - Received event from {}", event.getPeerAddress());
-        PDU pdu = event.getPDU();
+  }
 
-        if (null == pdu) {
-            log.warn("Null PDU received from {}", event.getPeerAddress());
-            return;
-        }
+  @Override
+  public void processPdu(CommandResponderEvent event) {
+    log.trace("processPdu() - Received event from {}", event.getPeerAddress());
+    PDU pdu = event.getPDU();
 
-        if (PDU.TRAP != pdu.getType()) {
-            log.trace("Message received from {} was not a trap. message={}", event.getPeerAddress(), event);
-            return;
-        }
-
-        SourceRecord sourceRecord = converter.convert(event);
-        this.recordBuffer.add(sourceRecord);
+    if (null == pdu) {
+      log.warn("Null PDU received from {}", event.getPeerAddress());
+      return;
     }
 
-    private static AbstractTransportMapping<?> setupTransport(String address, String listenProtocol, int port) {
-        InetAddress inetAddress = setupAddress(address);
-
-        try {
-            if ("UDP".equals(listenProtocol)) {
-                return setupUdpTransport(inetAddress, port);
-            } else {
-                return setupTcpTransport(inetAddress, port);
-            }
-        } catch (IOException ex) {
-            throw new ConnectException("Exception thrown while configuring transport.", ex);
-        }
+    if (PDU.TRAP != pdu.getType()) {
+      log.trace("Message received from {} was not a trap. message={}", event.getPeerAddress(), event);
+      return;
     }
 
-    private static DefaultUdpTransportMapping setupUdpTransport(InetAddress addr, int port) throws IOException {
-        UdpAddress udpAddress = new UdpAddress(addr, port);
-        return new DefaultUdpTransportMapping(udpAddress);
+    SourceRecord sourceRecord = converter.convert(event);
+    this.recordBuffer.add(sourceRecord);
+  }
+
+  private static AbstractTransportMapping<?> setupTransport(String address, String listenProtocol, int port) {
+    InetAddress inetAddress = setupAddress(address);
+
+    try {
+      if ("UDP".equals(listenProtocol)) {
+        return setupUdpTransport(inetAddress, port);
+      } else {
+        return setupTcpTransport(inetAddress, port);
+      }
+    } catch (IOException ex) {
+      throw new ConnectException("Exception thrown while configuring transport.", ex);
+    }
+  }
+
+  private static DefaultUdpTransportMapping setupUdpTransport(InetAddress addr, int port) throws IOException {
+    UdpAddress udpAddress = new UdpAddress(addr, port);
+    return new DefaultUdpTransportMapping(udpAddress);
+  }
+
+  private static DefaultTcpTransportMapping setupTcpTransport(InetAddress addr, int port) throws IOException {
+    TcpAddress tcpAddress = new TcpAddress(addr, port);
+    return new DefaultTcpTransportMapping(tcpAddress);
+  }
+
+  private static InetAddress setupAddress(String listenAddress) throws ConnectException {
+    try {
+      return InetAddress.getByName(listenAddress);
+    } catch (UnknownHostException e) {
+      throw new ConnectException("Exception thrown while trying to resolve " + listenAddress, e);
+    }
+  }
+
+  private static SecurityProtocols setupSecurityProtocols(Set<AuthenticationProtocol> authenticationProtocols,
+                                                          Set<PrivacyProtocol> privacyProtocols) {
+    SecurityProtocols securityProtocols = SecurityProtocols.getInstance();
+    securityProtocols.addDefaultProtocols();
+
+    if (authenticationProtocols.contains(AuthenticationProtocol.MD5)) {
+      securityProtocols.addAuthenticationProtocol(new AuthMD5());
+    }
+    if (authenticationProtocols.contains(AuthenticationProtocol.SHA)) {
+      securityProtocols.addAuthenticationProtocol(new AuthSHA());
+    }
+    if (privacyProtocols.contains(PrivacyProtocol.DES3)) {
+      securityProtocols.addPrivacyProtocol(new Priv3DES());
     }
 
-    private static DefaultTcpTransportMapping setupTcpTransport(InetAddress addr, int port) throws IOException {
-        TcpAddress tcpAddress = new TcpAddress(addr, port);
-        return new DefaultTcpTransportMapping(tcpAddress);
-    }
+    return securityProtocols;
+  }
 
-    private static InetAddress setupAddress(String listenAddress) throws ConnectException {
-        try {
-            return InetAddress.getByName(listenAddress);
-        } catch (UnknownHostException e) {
-            throw new ConnectException("Exception thrown while trying to resolve " + listenAddress, e);
-        }
-    }
+  private void setupMpv3(Snmp snmp, SecurityProtocols sp) {
+    MPv3 mpv3 = ((MPv3) snmp.getMessageProcessingModel(MPv3.ID));
+    // TODO Load the USM from somewhere which should be used with MPv3
+    USM usm = new USM(sp, new OctetString(snmp.getLocalEngineID()), 0);
+    SecurityModels sm = SecurityModels.getInstance().addSecurityModel(usm);
+    mpv3.setSecurityModels(sm);
+  }
 
-    private static SecurityProtocols setupSecurityProtocols(Set<AuthenticationProtocol> authenticationProtocols,
-                                                            Set<PrivacyProtocol> privacyProtocols) {
-        SecurityProtocols securityProtocols = SecurityProtocols.getInstance();
-        securityProtocols.addDefaultProtocols();
+  private static MessageDispatcher createMessageDispatcher(ThreadPool threadPool) {
+    MultiThreadedMessageDispatcher md = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
+    md.addMessageProcessingModel(new MPv1());
+    md.addMessageProcessingModel(new MPv2c());
+    md.addMessageProcessingModel(new MPv3());
+    return md;
+  }
 
-        if(authenticationProtocols.contains(AuthenticationProtocol.MD5)) {
-            securityProtocols.addAuthenticationProtocol(new AuthMD5());
-        }
-        if(authenticationProtocols.contains(AuthenticationProtocol.SHA)) {
-            securityProtocols.addAuthenticationProtocol(new AuthSHA());
-        }
-        if(privacyProtocols.contains(PrivacyProtocol.DES3)) {
-            securityProtocols.addPrivacyProtocol(new Priv3DES());
-        }
+  public SourceRecordConcurrentLinkedDeque getRecordBuffer() {
+    return recordBuffer;
+  }
 
-        return securityProtocols;
-    }
+  public SnmpTrapSourceConnectorConfig getConfig() {
+    return config;
+  }
 
-    private void setupMpv3(Snmp snmp, SecurityProtocols sp) {
-        MPv3 mpv3 = ((MPv3) snmp.getMessageProcessingModel(MPv3.ID));
-        // TODO Load the USM from somewhere which should be used with MPv3
-        USM usm = new USM(sp, new OctetString(snmp.getLocalEngineID()), 0);
-        SecurityModels sm = SecurityModels.getInstance().addSecurityModel(usm);
-        mpv3.setSecurityModels(sm);
-    }
-
-    private static MessageDispatcher createMessageDispatcher(ThreadPool threadPool) {
-        MultiThreadedMessageDispatcher md = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
-        md.addMessageProcessingModel(new MPv1());
-        md.addMessageProcessingModel(new MPv2c());
-        md.addMessageProcessingModel(new MPv3());
-        return md;
-    }
-
-    public SourceRecordConcurrentLinkedDeque getRecordBuffer() {
-        return recordBuffer;
-    }
-
-    public SnmpTrapSourceConnectorConfig getConfig() {
-        return config;
-    }
-
-    public Snmp getSnmp() {
-        return snmp;
-    }
+  public Snmp getSnmp() {
+    return snmp;
+  }
 }
