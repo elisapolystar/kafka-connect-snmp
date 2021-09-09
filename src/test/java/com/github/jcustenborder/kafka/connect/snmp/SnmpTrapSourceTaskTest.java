@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createNonTrap;
-import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createTrap;
+import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createV2Trap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,7 +54,8 @@ public class SnmpTrapSourceTaskTest {
     task.start(settings);
 
     // Specify receiver
-    Address targetAddress = new UdpAddress("127.0.0.1/10161");
+    String addr = String.format("127.0.0.1/%s", SnmpTrapSourceConnectorConfigTest.listeningPort);
+    Address targetAddress = new UdpAddress(addr);
     target = new CommunityTarget<>();
     target.setCommunity(new OctetString("public"));
     target.setVersion(SnmpConstants.version2c);
@@ -84,7 +85,7 @@ public class SnmpTrapSourceTaskTest {
 
     for (i = 0; i < 10; i++) {
 
-      PDU trap = createTrap("1.2.3.4.5", "some string");
+      PDU trap = createV2Trap("1.2.3.4.5", "some string");
       snmp.send(trap, target, null, null);
     }
 
@@ -118,7 +119,7 @@ public class SnmpTrapSourceTaskTest {
         pdu = createNonTrap("1.2.3.4.5", "some string");
       } else {
         trapCount++;
-        pdu = createTrap("1.2.3.4.5", "some string");
+        pdu = createV2Trap("1.2.3.4.5", "some string");
 
       }
       snmp.send(pdu, target, null, null);
@@ -133,7 +134,7 @@ public class SnmpTrapSourceTaskTest {
   @Test
   public void shouldReturnBufferWithPoll() throws IOException, InterruptedException {
 
-    PDU trap = createTrap("1.2.3.4.5", "some string");
+    PDU trap = createV2Trap("1.2.3.4.5", "some string");
     snmp.send(trap, target, null, null);
     assertFalse(this.task.poll().isEmpty(), "There should be trap in buffer");
     assertTrue(this.task.getRecordBuffer().isEmpty(), "Buffer should be empty after polling.");
@@ -147,7 +148,7 @@ public class SnmpTrapSourceTaskTest {
     int i;
 
     for (i = 0; i < 15; i++) {
-      PDU trap = createTrap("1.2.3.4.5", "some string");
+      PDU trap = createV2Trap("1.2.3.4.5", "some string");
       snmp.send(trap, target, null, null);
     }
 

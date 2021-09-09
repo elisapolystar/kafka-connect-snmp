@@ -21,13 +21,20 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SnmpTrapSourceConnectorConfigTest {
 
+  public static String listeningPort = "11111";
+  public static int batchSize = 10;
   public static Map<String, String> settings() {
     return ImmutableMap.of(
+        SnmpTrapSourceConnectorConfig.LISTEN_PORT_CONF, listeningPort,
         SnmpTrapSourceConnectorConfig.TOPIC_CONF, "testing",
-        SnmpTrapSourceConnectorConfig.BATCH_SIZE_CONF, "10"
+        SnmpTrapSourceConnectorConfig.BATCH_SIZE_CONF, String.format("%d", batchSize)
     );
   }
 
@@ -38,5 +45,37 @@ public class SnmpTrapSourceConnectorConfigTest {
     System.out.println(
         MarkdownFormatter.toMarkdown(SnmpTrapSourceConnectorConfig.conf())
     );
+  }
+
+  @Test
+  public void shouldConvertLists() {
+    Map<String, String> m = Map.of(
+            SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
+            SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5,SHA",
+            SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "DES3"
+    );
+    SnmpTrapSourceConnectorConfig c = new SnmpTrapSourceConnectorConfig(m);
+    assertEquals(Set.of(AuthenticationProtocol.MD5, AuthenticationProtocol.SHA), c.authenticationProtocols);
+    assertEquals(Set.of(PrivacyProtocol.DES3), c.privacyProtocols);
+
+
+    m = Map.of(
+            SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
+            SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5"
+    );
+    c = new SnmpTrapSourceConnectorConfig(m);
+    assertEquals(Set.of(AuthenticationProtocol.MD5), c.authenticationProtocols);
+
+  }
+
+  @Test
+  public void shouldNotAcceptInvalidListValues() {
+    Map<String, String> m = Map.of(
+            SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
+            SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "aaa,bbb",
+            SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "ccc"
+    );
+    assertThrows(org.apache.kafka.common.config.ConfigException.class, () -> new SnmpTrapSourceConnectorConfig(m));
+
   }
 }

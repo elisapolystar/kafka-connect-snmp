@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createTrap;
+import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createV2Trap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,7 +45,7 @@ class PDUConverterTest {
 
     String oid = "1.2.3.4.5";
     String oidv = "string";
-    PDU pdu = createTrap(oid, oidv);
+    PDU pdu = createV2Trap(oid, oidv);
 
 
     when(event.getPDU()).thenReturn(pdu);
