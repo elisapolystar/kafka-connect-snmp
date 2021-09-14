@@ -18,9 +18,10 @@ package com.github.jcustenborder.kafka.connect.snmp;
 
 
 import com.github.jcustenborder.kafka.connect.utils.config.MarkdownFormatter;
-import com.google.common.collect.ImmutableMap;
+import org.apache.kafka.common.config.ConfigException;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,15 +30,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SnmpTrapSourceConnectorConfigTest {
 
-  public static String listeningPort = "11111";
-  public static int batchSize = 10;
+  public static final String listeningPort = "11111";
+  public static final int batchSize = 10;
+  public static final String username = "username";
+  public static final String privacyPassphrase = "privpass";
+  public static final String authenticationPassphrase = "authpass";
 
   public static Map<String, String> settings() {
-    return ImmutableMap.of(
-        SnmpTrapSourceConnectorConfig.LISTEN_PORT_CONF, listeningPort,
-        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "testing",
-        SnmpTrapSourceConnectorConfig.BATCH_SIZE_CONF, String.format("%d", batchSize)
-    );
+
+    HashMap<String, String> map = new HashMap<>();
+    map.put(SnmpTrapSourceConnectorConfig.LISTEN_PORT_CONF, listeningPort);
+    map.put(SnmpTrapSourceConnectorConfig.TOPIC_CONF, "testing");
+    map.put(SnmpTrapSourceConnectorConfig.BATCH_SIZE_CONF, String.format("%d", batchSize));
+    map.put(SnmpTrapSourceConnectorConfig.USM_USERNAME, username);
+    map.put(SnmpTrapSourceConnectorConfig.USM_PRIVACY_PASSPHRASE, privacyPassphrase);
+    map.put(SnmpTrapSourceConnectorConfig.USM_AUTHENTICATION_PASSPHRASE, authenticationPassphrase);
+    return map;
   }
 
 
@@ -51,20 +59,16 @@ public class SnmpTrapSourceConnectorConfigTest {
 
   @Test
   public void shouldConvertLists() {
-    Map<String, String> m = Map.of(
-        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
-        SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5,SHA",
-        SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "DES3"
-    );
+    Map<String, String> m = settings();
     SnmpTrapSourceConnectorConfig c = new SnmpTrapSourceConnectorConfig(m);
     assertEquals(Set.of(AuthenticationProtocol.MD5, AuthenticationProtocol.SHA), c.authenticationProtocols);
-    assertEquals(Set.of(PrivacyProtocol.DES3), c.privacyProtocols);
+    assertEquals(Set.of(PrivacyProtocol.DES3, PrivacyProtocol.AES128), c.privacyProtocols);
 
+    m = settings();
 
-    m = Map.of(
-        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
-        SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5"
-    );
+    m.put(SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic");
+    m.put(SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5");
+
     c = new SnmpTrapSourceConnectorConfig(m);
     assertEquals(Set.of(AuthenticationProtocol.MD5), c.authenticationProtocols);
 
@@ -78,6 +82,22 @@ public class SnmpTrapSourceConnectorConfigTest {
         SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "ccc"
     );
     assertThrows(org.apache.kafka.common.config.ConfigException.class, () -> new SnmpTrapSourceConnectorConfig(m));
+
+  }
+
+  @Test
+  public void shouldNotConvertInvalidProtocols() {
+    assertThrows(ConfigException.class, () -> {
+      Map<String, String> m = settings();
+      m.put(SnmpTrapSourceConnectorConfig.USM_PRIVACY_PROTOCOL, "XT1");
+      new SnmpTrapSourceConnectorConfig(m);
+    });
+
+    assertThrows(ConfigException.class, () -> {
+      Map<String, String> m = settings();
+      m.put(SnmpTrapSourceConnectorConfig.USM_AUTHENTICATION_PROTOCOL, "XT1");
+      new SnmpTrapSourceConnectorConfig(m);
+    });
 
   }
 }

@@ -20,5 +20,6 @@ package com.github.jcustenborder.kafka.connect.snmp;
  * Supported privacy protocols
  */
 public enum PrivacyProtocol {
-    DES3
+    DES3,
+    AES128
 }

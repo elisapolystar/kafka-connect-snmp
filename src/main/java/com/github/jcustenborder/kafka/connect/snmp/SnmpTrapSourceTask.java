@@ -36,9 +36,12 @@ import org.snmp4j.mp.MPv3;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
 import org.snmp4j.security.Priv3DES;
+import org.snmp4j.security.PrivAES128;
 import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.USM;
+import org.snmp4j.security.UsmUser;
+import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.TcpAddress;
 import org.snmp4j.smi.UdpAddress;
@@ -97,7 +100,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     this.snmp = new Snmp(this.messageDispatcher, this.transport);
     this.snmp.addCommandResponder(this);
 
-    setupMpv3(this.snmp, this.securityProtocols);
+    setupMpv3(this.snmp, this.config, this.securityProtocols);
 
   }
 
@@ -198,14 +201,49 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
       securityProtocols.addPrivacyProtocol(new Priv3DES());
     }
 
+    if (privacyProtocols.contains(PrivacyProtocol.AES128)) {
+      securityProtocols.addPrivacyProtocol(new PrivAES128());
+    }
+
     return securityProtocols;
   }
 
-  private void setupMpv3(Snmp snmp, SecurityProtocols sp) {
+  private OID convertPrivacyProtocol(PrivacyProtocol privacyProtocol) {
+    switch(privacyProtocol) {
+      case DES3:
+        return Priv3DES.ID;
+      case AES128:
+        return PrivAES128.ID;
+      default:
+        return PrivAES128.ID;
+    }
+  }
+
+  private OID convertAuthenticationProtocol(AuthenticationProtocol authenticationProtocol) {
+    switch(authenticationProtocol) {
+      case MD5:
+        return AuthMD5.ID;
+      case SHA:
+        return AuthSHA.ID;
+      default:
+        return AuthMD5.ID;
+    }
+  }
+
+  private void setupMpv3(Snmp snmp, SnmpTrapSourceConnectorConfig config, SecurityProtocols sp) {
     MPv3 mpv3 = ((MPv3) snmp.getMessageProcessingModel(MPv3.ID));
-    // TODO Load the USM from somewhere which should be used with MPv3
     USM usm = new USM(sp, new OctetString(snmp.getLocalEngineID()), 0);
     SecurityModels sm = SecurityModels.getInstance().addSecurityModel(usm);
+    if(config.username != null && config.privacyPassphrase != null && config.authenticationPassphrase != null) {
+      UsmUser uu = new UsmUser(
+          new OctetString(config.username),
+          convertAuthenticationProtocol(config.authenticationProtocol),
+          new OctetString(config.authenticationPassphrase),
+          convertPrivacyProtocol(config.privacyProtocol),
+          new OctetString(config.privacyPassphrase)
+      );
+      usm.addUser(uu);
+    }
     mpv3.setSecurityModels(sm);
   }
 
