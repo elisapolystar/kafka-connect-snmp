@@ -209,7 +209,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   }
 
   private OID convertPrivacyProtocol(PrivacyProtocol privacyProtocol) {
-    switch(privacyProtocol) {
+    switch (privacyProtocol) {
       case DES3:
         return Priv3DES.ID;
       case AES128:
@@ -220,7 +220,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   }
 
   private OID convertAuthenticationProtocol(AuthenticationProtocol authenticationProtocol) {
-    switch(authenticationProtocol) {
+    switch (authenticationProtocol) {
       case MD5:
         return AuthMD5.ID;
       case SHA:
@@ -234,7 +234,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     MPv3 mpv3 = ((MPv3) snmp.getMessageProcessingModel(MPv3.ID));
     USM usm = new USM(sp, new OctetString(snmp.getLocalEngineID()), 0);
     SecurityModels sm = SecurityModels.getInstance().addSecurityModel(usm);
-    if(config.username != null && config.privacyPassphrase != null && config.authenticationPassphrase != null) {
+    if (config.username != null && config.privacyPassphrase != null && config.authenticationPassphrase != null) {
       UsmUser uu = new UsmUser(
           new OctetString(config.username),
           convertAuthenticationProtocol(config.authenticationProtocol),
