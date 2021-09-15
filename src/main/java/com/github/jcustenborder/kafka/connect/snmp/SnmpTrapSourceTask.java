@@ -83,13 +83,14 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     this.converter = new PDUConverter(this.time, config);
     this.recordBuffer = new SourceRecordConcurrentLinkedDeque(this.config.batchSize, 0);
     log.info("start() - Setting listen address with {} on {}:{}", this.config.listenProtocol, this.config.listenAddress, this.config.listenPort);
+    log.info("start() - MPv3 support: {}", this.config.mpv3Enabled);
 
     this.transport = setupTransport(this.config.listenAddress, this.config.listenProtocol, this.config.listenPort);
 
     log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
     this.threadPool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
-    this.messageDispatcher = createMessageDispatcher(this.threadPool);
-    this.securityProtocols = setupSecurityProtocols(config.authenticationProtocols, config.privacyProtocols);
+    this.messageDispatcher = createMessageDispatcher(this.threadPool, this.config.mpv3Enabled);
+    this.securityProtocols = setupSecurityProtocols(config.authenticationProtocols, config.privacyProtocols, this.config.mpv3Enabled);
 
     try {
       this.transport.listen();
@@ -100,7 +101,9 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     this.snmp = new Snmp(this.messageDispatcher, this.transport);
     this.snmp.addCommandResponder(this);
 
-    setupMpv3(this.snmp, this.config, this.securityProtocols);
+    if (this.config.mpv3Enabled) {
+      setupMpv3(this.snmp, this.config, this.securityProtocols);
+    }
 
   }
 
@@ -187,22 +190,24 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   }
 
   private static SecurityProtocols setupSecurityProtocols(Set<AuthenticationProtocol> authenticationProtocols,
-                                                          Set<PrivacyProtocol> privacyProtocols) {
+                                                          Set<PrivacyProtocol> privacyProtocols,
+                                                          boolean mpv3Enabled) {
     SecurityProtocols securityProtocols = SecurityProtocols.getInstance();
     securityProtocols.addDefaultProtocols();
 
-    if (authenticationProtocols.contains(AuthenticationProtocol.MD5)) {
-      securityProtocols.addAuthenticationProtocol(new AuthMD5());
-    }
-    if (authenticationProtocols.contains(AuthenticationProtocol.SHA)) {
-      securityProtocols.addAuthenticationProtocol(new AuthSHA());
-    }
-    if (privacyProtocols.contains(PrivacyProtocol.DES3)) {
-      securityProtocols.addPrivacyProtocol(new Priv3DES());
-    }
-
-    if (privacyProtocols.contains(PrivacyProtocol.AES128)) {
-      securityProtocols.addPrivacyProtocol(new PrivAES128());
+    if (mpv3Enabled) {
+      if (authenticationProtocols.contains(AuthenticationProtocol.MD5)) {
+        securityProtocols.addAuthenticationProtocol(new AuthMD5());
+      }
+      if (authenticationProtocols.contains(AuthenticationProtocol.SHA)) {
+        securityProtocols.addAuthenticationProtocol(new AuthSHA());
+      }
+      if (privacyProtocols.contains(PrivacyProtocol.DES3)) {
+        securityProtocols.addPrivacyProtocol(new Priv3DES());
+      }
+      if (privacyProtocols.contains(PrivacyProtocol.AES128)) {
+        securityProtocols.addPrivacyProtocol(new PrivAES128());
+      }
     }
 
     return securityProtocols;
@@ -247,11 +252,13 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     mpv3.setSecurityModels(sm);
   }
 
-  private static MessageDispatcher createMessageDispatcher(ThreadPool threadPool) {
+  private static MessageDispatcher createMessageDispatcher(ThreadPool threadPool, boolean mpv3Enabled) {
     MultiThreadedMessageDispatcher md = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
     md.addMessageProcessingModel(new MPv1());
     md.addMessageProcessingModel(new MPv2c());
-    md.addMessageProcessingModel(new MPv3());
+    if (mpv3Enabled) {
+      md.addMessageProcessingModel(new MPv3());
+    }
     return md;
   }
 

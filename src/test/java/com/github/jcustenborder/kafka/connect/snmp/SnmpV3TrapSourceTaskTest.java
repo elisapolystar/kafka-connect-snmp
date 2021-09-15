@@ -181,7 +181,7 @@ public class SnmpV3TrapSourceTaskTest {
   @BeforeEach
   public void setUp() throws Exception {
     task = new SnmpTrapSourceTask();
-    Map<String, String> settings = SnmpTrapSourceConnectorConfigTest.settings();
+    Map<String, String> settings = SnmpTrapSourceConnectorConfigTest.settingsV3();
     task.start(settings);
 
     // Specify receiver

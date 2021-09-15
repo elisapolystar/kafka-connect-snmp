@@ -50,7 +50,7 @@ class PDUConverterTest {
     event = (CommandResponderEvent<Address>) mock(CommandResponderEvent.class);
     addr = mock(Address.class);
 
-    Map<String, String> settings = SnmpTrapSourceConnectorConfigTest.settings();
+    Map<String, String> settings = SnmpTrapSourceConnectorConfigTest.settingsV2();
     SnmpTrapSourceConnectorConfig conf = new SnmpTrapSourceConnectorConfig(settings);
 
     converter = new PDUConverter(new SystemTime(), conf);

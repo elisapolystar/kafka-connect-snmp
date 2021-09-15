@@ -51,7 +51,7 @@ public class SnmpTrapSourceTaskTest {
   @BeforeEach
   public void start() throws SocketException, InterruptedException {
     task = new SnmpTrapSourceTask();
-    settings = SnmpTrapSourceConnectorConfigTest.settings();
+    settings = SnmpTrapSourceConnectorConfigTest.settingsV2();
     task.start(settings);
 
     // Specify receiver

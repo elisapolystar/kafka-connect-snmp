@@ -35,13 +35,13 @@ public class SnmpTrapSourceConnectorTest {
   @BeforeEach
   public void start() {
     this.connector = new SnmpTrapSourceConnector();
-    this.connector.start(SnmpTrapSourceConnectorConfigTest.settings());
+    this.connector.start(SnmpTrapSourceConnectorConfigTest.settingsV2());
   }
 
   @Test
   public void taskConfigs() {
     final List<Map<String, String>> expected = ImmutableList.of(
-        SnmpTrapSourceConnectorConfigTest.settings()
+        SnmpTrapSourceConnectorConfigTest.settingsV2()
     );
     List<Map<String, String>> actual = this.connector.taskConfigs(1);
     assertEquals(expected, actual);
