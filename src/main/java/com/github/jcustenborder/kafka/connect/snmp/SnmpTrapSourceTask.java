@@ -131,7 +131,9 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
     log.info("stop() - closing transport.");
     try {
-      this.transport.close();
+      if(this.transport != null) {
+        this.transport.close();
+      }
     } catch (IOException e) {
       log.error("Exception thrown while closing transport.", e);
     }
