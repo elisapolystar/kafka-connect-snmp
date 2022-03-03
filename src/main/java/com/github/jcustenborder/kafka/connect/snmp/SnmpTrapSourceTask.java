@@ -202,10 +202,10 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     securityProtocols.addDefaultProtocols();
 
     if (mpv3Enabled) {
-        securityProtocols.addAuthenticationProtocol(new AuthMD5());
-        securityProtocols.addAuthenticationProtocol(new AuthSHA());
-        securityProtocols.addPrivacyProtocol(new Priv3DES());
-        securityProtocols.addPrivacyProtocol(new PrivAES128());
+      securityProtocols.addAuthenticationProtocol(new AuthMD5());
+      securityProtocols.addAuthenticationProtocol(new AuthSHA());
+      securityProtocols.addPrivacyProtocol(new Priv3DES());
+      securityProtocols.addPrivacyProtocol(new PrivAES128());
     }
 
     return securityProtocols;

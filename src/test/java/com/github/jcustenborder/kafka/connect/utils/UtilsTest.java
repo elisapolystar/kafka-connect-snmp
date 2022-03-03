@@ -1,4 +1,4 @@
-package com.github.jcustenborder.kafka.connect.utls;
+package com.github.jcustenborder.kafka.connect.utils;
 /**
  * Copyright © 2021 Elisa Oyj
  * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
@@ -16,7 +16,6 @@ package com.github.jcustenborder.kafka.connect.utls;
  * limitations under the License.
  */
 
-import com.github.jcustenborder.kafka.connect.utils.Utils;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

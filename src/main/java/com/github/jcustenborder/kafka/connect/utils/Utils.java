@@ -22,7 +22,7 @@ import java.util.Objects;
 
 public class Utils {
 
-  public static boolean noneNull(Object... args){
+  public static boolean noneNull(Object... args) {
     return Arrays.stream(args).allMatch(Objects::nonNull);
   }
 }
