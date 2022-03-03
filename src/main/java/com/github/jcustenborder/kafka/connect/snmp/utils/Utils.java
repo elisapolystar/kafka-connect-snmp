@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.jcustenborder.kafka.connect.utils;
+package com.github.jcustenborder.kafka.connect.snmp.utils;
 
 import java.util.Arrays;
 import java.util.Objects;

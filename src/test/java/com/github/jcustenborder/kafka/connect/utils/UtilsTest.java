@@ -16,6 +16,7 @@ package com.github.jcustenborder.kafka.connect.utils;
  * limitations under the License.
  */
 
+import com.github.jcustenborder.kafka.connect.snmp.utils.Utils;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

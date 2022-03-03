@@ -16,7 +16,6 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp;
 
-import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import com.github.jcustenborder.kafka.connect.utils.config.Description;
 import com.github.jcustenborder.kafka.connect.utils.config.DocumentationImportant;
 import org.apache.kafka.common.config.ConfigDef;

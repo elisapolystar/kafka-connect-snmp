@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.jcustenborder.kafka.connect.utils;
+package com.github.jcustenborder.kafka.connect.snmp;
 
 import com.google.common.base.Strings;
 import org.slf4j.Logger;

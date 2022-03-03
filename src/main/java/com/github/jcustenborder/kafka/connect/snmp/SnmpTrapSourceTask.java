@@ -19,7 +19,6 @@ package com.github.jcustenborder.kafka.connect.snmp;
 import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
-import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
 import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Time;
