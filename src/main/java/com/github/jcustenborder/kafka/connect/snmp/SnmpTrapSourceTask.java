@@ -128,7 +128,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     log.info("stop() - stopping threadpool");
 
     if (this.threadPool != null) {
-      this.threadPool.stop();
+      this.threadPool.cancel();
     }
 
     log.info("stop() - closing transport.");

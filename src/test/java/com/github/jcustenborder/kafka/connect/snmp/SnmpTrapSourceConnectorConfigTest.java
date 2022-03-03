@@ -40,6 +40,7 @@ public class SnmpTrapSourceConnectorConfigTest {
   public static Map<String, String> settingsV2() {
 
     HashMap<String, String> map = new HashMap<>();
+    map.put(SnmpTrapSourceConnectorConfig.DISPATCHER_THREAD_POOL_SIZE_CONF, "1");
     map.put(SnmpTrapSourceConnectorConfig.LISTEN_PORT_CONF, listeningPort);
     map.put(SnmpTrapSourceConnectorConfig.TOPIC_CONF, "testing");
     map.put(SnmpTrapSourceConnectorConfig.BATCH_SIZE_CONF, String.format("%d", batchSize));

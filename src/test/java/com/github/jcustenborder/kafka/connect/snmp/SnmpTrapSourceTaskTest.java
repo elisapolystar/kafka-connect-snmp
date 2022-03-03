@@ -64,9 +64,6 @@ public class SnmpTrapSourceTaskTest {
 
     snmp = new Snmp(new DefaultUdpTransportMapping());
 
-    Thread.sleep(1000);
-
-
   }
 
   @AfterEach
