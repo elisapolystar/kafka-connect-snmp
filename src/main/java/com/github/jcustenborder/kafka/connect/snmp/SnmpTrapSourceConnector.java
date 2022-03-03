@@ -41,7 +41,7 @@ public class SnmpTrapSourceConnector extends SourceConnector {
 
   @Override
   public String version() {
-    return VersionUtil.version(this.getClass());
+    return VersionUtil.getVersion();
   }
 
   @Override

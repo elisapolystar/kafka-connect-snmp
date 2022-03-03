@@ -21,24 +21,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <developers>
-        <developer>
-            <id>vilvo</id>
-            <name>Ville Ilvonen</name>
-            <url>https://github.com/vilvo</url>
-            <roles>
-                <role>Committer</role>
-            </roles>
-        </developer>
-        <developer>
-            <id>jcustenborder</id>
-            <name>Jeremy Custenborder</name>
-            <url>https://github.com/jcustenborder</url>
-            <roles>
-                <role>Committer</role>
-            </roles>
-        </developer>
-    </developers>
     <scm>
         <connection>scm:git:https://github.com/elisapolystar/kafka-connect-snmp.git</connection>
         <developerConnection>scm:git:git@github.com:elisapolystar/kafka-connect-snmp.git</developerConnection>
@@ -58,7 +40,7 @@
         <dependency>
             <groupId>org.snmp4j</groupId>
             <artifactId>snmp4j</artifactId>
-            <version>3.5.1</version>
+            <version>3.6.4</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

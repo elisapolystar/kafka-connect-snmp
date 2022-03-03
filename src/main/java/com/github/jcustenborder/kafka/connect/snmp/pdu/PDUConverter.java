@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.jcustenborder.kafka.connect.snmp;
+package com.github.jcustenborder.kafka.connect.snmp.pdu;
 
+import com.github.jcustenborder.kafka.connect.snmp.SnmpTrapSourceConnectorConfig;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.common.utils.Time;

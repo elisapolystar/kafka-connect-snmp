@@ -16,6 +16,10 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp;
 
+import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
+import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
+import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
+import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
 import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Time;
@@ -58,7 +62,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   static final Logger log = LoggerFactory.getLogger(SnmpTrapSourceTask.class);
@@ -90,7 +93,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
     this.threadPool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
     this.messageDispatcher = createMessageDispatcher(this.threadPool, this.config.mpv3Enabled);
-    SecurityProtocols securityProtocols = setupSecurityProtocols(config.authenticationProtocols, config.privacyProtocols, this.config.mpv3Enabled);
+    SecurityProtocols securityProtocols = setupSecurityProtocols(this.config.mpv3Enabled);
 
     try {
       this.transport.listen();
@@ -194,25 +197,15 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     }
   }
 
-  private static SecurityProtocols setupSecurityProtocols(Set<AuthenticationProtocol> authenticationProtocols,
-                                                          Set<PrivacyProtocol> privacyProtocols,
-                                                          boolean mpv3Enabled) {
+  private static SecurityProtocols setupSecurityProtocols(boolean mpv3Enabled) {
     SecurityProtocols securityProtocols = SecurityProtocols.getInstance();
     securityProtocols.addDefaultProtocols();
 
     if (mpv3Enabled) {
-      if (authenticationProtocols.contains(AuthenticationProtocol.MD5)) {
-        securityProtocols.addAuthenticationProtocol(new AuthMD5());
-      }
-      if (authenticationProtocols.contains(AuthenticationProtocol.SHA)) {
-        securityProtocols.addAuthenticationProtocol(new AuthSHA());
-      }
-      if (privacyProtocols.contains(PrivacyProtocol.DES3)) {
-        securityProtocols.addPrivacyProtocol(new Priv3DES());
-      }
-      if (privacyProtocols.contains(PrivacyProtocol.AES128)) {
-        securityProtocols.addPrivacyProtocol(new PrivAES128());
-      }
+      securityProtocols.addAuthenticationProtocol(new AuthMD5());
+      securityProtocols.addAuthenticationProtocol(new AuthSHA());
+      securityProtocols.addPrivacyProtocol(new Priv3DES());
+      securityProtocols.addPrivacyProtocol(new PrivAES128());
     }
 
     return securityProtocols;

@@ -35,8 +35,8 @@ import java.net.SocketException;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createNonTrap;
-import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createV2Trap;
+import static com.github.jcustenborder.kafka.connect.snmp.pdu.PDUGen.createNonTrap;
+import static com.github.jcustenborder.kafka.connect.snmp.pdu.PDUGen.createV2Trap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

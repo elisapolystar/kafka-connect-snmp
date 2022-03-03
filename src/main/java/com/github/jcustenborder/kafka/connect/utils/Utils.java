@@ -1,5 +1,6 @@
 /**
  * Copyright © 2021 Elisa Oyj
+ * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.jcustenborder.kafka.connect.snmp;
+package com.github.jcustenborder.kafka.connect.utils;
 
-/**
- * Supported privacy protocols
- */
-public enum PrivacyProtocol {
-    DES3,
-    AES128
+import java.util.Arrays;
+import java.util.Objects;
+
+
+public class Utils {
+
+  public static boolean noneNull(Object... args) {
+    return Arrays.stream(args).allMatch(Objects::nonNull);
+  }
 }

@@ -51,8 +51,8 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createV2Trap;
-import static com.github.jcustenborder.kafka.connect.snmp.PDUGen.createV3Trap;
+import static com.github.jcustenborder.kafka.connect.snmp.pdu.PDUGen.createV2Trap;
+import static com.github.jcustenborder.kafka.connect.snmp.pdu.PDUGen.createV3Trap;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SnmpV3TrapSourceTaskTest {
