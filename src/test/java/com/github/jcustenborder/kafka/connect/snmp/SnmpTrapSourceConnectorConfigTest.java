@@ -17,13 +17,14 @@
 package com.github.jcustenborder.kafka.connect.snmp;
 
 
+import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
+import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.utils.config.MarkdownFormatter;
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,6 +58,30 @@ public class SnmpTrapSourceConnectorConfigTest {
     return map;
   }
 
+
+  @Test
+  public static void convertAuthProtocols() {
+    Map<String, String> m = settingsV3();
+    for (AuthenticationProtocol p : AuthenticationProtocol.values()) {
+      m.put(SnmpTrapSourceConnectorConfig.USM_AUTHENTICATION_PROTOCOL, p.toString());
+      SnmpTrapSourceConnectorConfig c = new SnmpTrapSourceConnectorConfig(m);
+      assertEquals(p, c.authenticationProtocol);
+    }
+
+  }
+
+
+  @Test
+  public static void convertPrivProtocols() {
+    Map<String, String> m = settingsV3();
+
+    for (PrivacyProtocol p : PrivacyProtocol.values()) {
+      m.put(SnmpTrapSourceConnectorConfig.USM_PRIVACY_PROTOCOL, p.toString());
+      SnmpTrapSourceConnectorConfig c = new SnmpTrapSourceConnectorConfig(m);
+      assertEquals(p, c.privacyProtocol);
+    }
+  }
+
   @Test
   public void doc() {
 
@@ -65,33 +90,6 @@ public class SnmpTrapSourceConnectorConfigTest {
     );
   }
 
-  @Test
-  public void shouldConvertLists() {
-    Map<String, String> m = settingsV2();
-    SnmpTrapSourceConnectorConfig c = new SnmpTrapSourceConnectorConfig(m);
-    assertEquals(Set.of(AuthenticationProtocol.MD5, AuthenticationProtocol.SHA), c.authenticationProtocols);
-    assertEquals(Set.of(PrivacyProtocol.DES3, PrivacyProtocol.AES128), c.privacyProtocols);
-
-    m = settingsV2();
-
-    m.put(SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic");
-    m.put(SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "MD5");
-
-    c = new SnmpTrapSourceConnectorConfig(m);
-    assertEquals(Set.of(AuthenticationProtocol.MD5), c.authenticationProtocols);
-
-  }
-
-  @Test
-  public void shouldNotAcceptInvalidListValues() {
-    Map<String, String> m = Map.of(
-        SnmpTrapSourceConnectorConfig.TOPIC_CONF, "topic",
-        SnmpTrapSourceConnectorConfig.AUTHENTICATION_PROTOCOLS, "aaa,bbb",
-        SnmpTrapSourceConnectorConfig.PRIVACY_PROTOCOLS, "ccc"
-    );
-    assertThrows(org.apache.kafka.common.config.ConfigException.class, () -> new SnmpTrapSourceConnectorConfig(m));
-
-  }
 
   @Test
   public void shouldNotConvertInvalidProtocols() {

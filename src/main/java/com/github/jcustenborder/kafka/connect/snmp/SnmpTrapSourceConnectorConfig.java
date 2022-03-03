@@ -16,6 +16,8 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp;
 
+import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
+import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.utils.config.validators.Validators;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
@@ -23,10 +25,7 @@ import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 
 public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
@@ -62,14 +61,6 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   static final String MPV3_ENABLED_DOC = "Configuration property to enable MPv3 support";
   static final boolean MPV3_ENABLED_DEFAULT = false;
 
-  public static final String AUTHENTICATION_PROTOCOLS = "authentication.protocols";
-  static final String AUTHENTICATION_PROTOCOLS_DOC = "The supported authentication protocols for MPv3";
-  static final List<String> AUTHENTICATION_PROTOCOLS_DEFAULT = Arrays.stream(AuthenticationProtocol.values()).map(Enum::toString).collect(Collectors.toList());
-
-  public static final String PRIVACY_PROTOCOLS = "privacy.protocols";
-  static final String PRIVACY_PROTOCOLS_DOC = "The supported privacy protocols for MPv3";
-  static final List<String> PRIVACY_PROTOCOLS_DEFAULT = Arrays.stream(PrivacyProtocol.values()).map(Enum::toString).collect(Collectors.toList());
-
   public static final String USM_USERNAME = "usm.username";
   static final String USM_USERNAME_DOC = "The supported privacy protocols for MPv3";
   static final String USM_USERNAME_DEFAULT =  "";
@@ -99,8 +90,6 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   public final int batchSize;
   public final int pollBackoffMs;
   public final boolean mpv3Enabled;
-  public final Set<AuthenticationProtocol> authenticationProtocols;
-  public final Set<PrivacyProtocol> privacyProtocols;
   public final String username;
   public final String privacyPassphrase;
   public final String authenticationPassphrase;
@@ -109,7 +98,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
 
 
   public SnmpTrapSourceConnectorConfig(Map<String, String> parsedConfig) {
-    super(conf(), parsedConfig);
+    super(conf(), parsedConfig, false);
 
     this.listenAddress = this.getString(LISTEN_ADDRESS_CONF);
     this.listenPort = this.getInt(LISTEN_PORT_CONF);
@@ -119,12 +108,6 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
     this.batchSize = this.getInt(BATCH_SIZE_CONF);
     this.pollBackoffMs = this.getInt(POLL_BACKOFF_MS_CONF);
     this.mpv3Enabled = this.getBoolean(MPV3_ENABLED_CONF);
-    this.authenticationProtocols = this.getList(AUTHENTICATION_PROTOCOLS)
-        .stream().map((s) -> AuthenticationProtocol.valueOf(s.toUpperCase()))
-        .collect(Collectors.toSet());
-    this.privacyProtocols = this.getList(PRIVACY_PROTOCOLS)
-        .stream().map((s) -> PrivacyProtocol.valueOf(s.toUpperCase()))
-        .collect(Collectors.toSet());
     this.username = this.getString(USM_USERNAME);
     this.authenticationPassphrase = this.getString(USM_AUTHENTICATION_PASSPHRASE);
     this.privacyPassphrase = this.getString(USM_PRIVACY_PASSPHRASE);
@@ -147,8 +130,6 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
         .define(MPV3_ENABLED_CONF, Type.BOOLEAN, MPV3_ENABLED_DEFAULT, Importance.MEDIUM, MPV3_ENABLED_DOC)
 
         // MPv3 configs
-        .define(AUTHENTICATION_PROTOCOLS, Type.LIST, AUTHENTICATION_PROTOCOLS_DEFAULT, ConfigDef.ValidList.in(authProtocols), Importance.MEDIUM, AUTHENTICATION_PROTOCOLS_DOC)
-        .define(PRIVACY_PROTOCOLS, Type.LIST, PRIVACY_PROTOCOLS_DEFAULT, ConfigDef.ValidList.in(privProtocols), Importance.MEDIUM, PRIVACY_PROTOCOLS_DOC)
         .define(USM_USERNAME, Type.STRING, USM_USERNAME_DEFAULT, Importance.MEDIUM, USM_USERNAME_DOC)
         .define(USM_AUTHENTICATION_PASSPHRASE, Type.STRING, USM_AUTHENTICATION_PASSPHRASE_DEFAULT, Importance.MEDIUM, USM_AUTHENTICATION_PASSPHRASE_DOC)
         .define(USM_PRIVACY_PASSPHRASE, Type.STRING, USM_PRIVACY_PASSPHRASE_DEFAULT, Importance.MEDIUM, USM_PRIVACY_PASSPHRASE_DOC)
