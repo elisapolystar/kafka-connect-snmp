@@ -25,6 +25,7 @@ class RecordBufferTest {
     assertEquals(rbs.size(), 101);
     assertEquals(rbs.poll(), first);
     assertEquals(rbs.size(), 100);
+    assertFalse(rbs.isEmpty());
 
     String polled = "";
     while(rbs.size() != 0) {
@@ -33,5 +34,6 @@ class RecordBufferTest {
 
     assertEquals(polled, last);
     assertEquals(rbs.size(), 0);
+    assertTrue(rbs.isEmpty());
   }
 }
