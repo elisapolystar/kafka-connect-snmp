@@ -15,8 +15,6 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp.utils;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
