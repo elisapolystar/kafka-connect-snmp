@@ -114,7 +114,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   private static List<SourceRecord> drain(int batchSize, RecordBuffer<SourceRecord> records) {
     int size = Math.min(records.size(), batchSize);
-    log.trace("Non-empty buffer, draining {} records", size);
+    log.debug("Non-empty buffer, draining {} records", size);
     List<SourceRecord> batch = new ArrayList<>(size);
 
     for (int i = 0; i < size; i++) {
@@ -122,7 +122,6 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
       if (null != record) {
         batch.add(record);
       } else {
-        log.debug("Poll returned null. exiting");
         break;
       }
     }
