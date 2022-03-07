@@ -15,6 +15,13 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp.utils;
 
+import com.github.jcustenborder.kafka.connect.snmp.SnmpTrapSourceTask;
+import org.apache.kafka.connect.source.SourceRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,18 +33,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RecordBuffer<T> {
 
   private final ConcurrentLinkedDeque<T> queu;
-  private AtomicInteger size = new AtomicInteger(0);
+  private final AtomicInteger size;
 
   public RecordBuffer() {
     this.queu = new ConcurrentLinkedDeque<>();
+    this.size = new AtomicInteger(0);
   }
 
-  public void add(T ele) {
+  public synchronized void add(T ele) {
     this.queu.add(ele);
     size.incrementAndGet();
   }
 
-  public T poll() {
+  public synchronized T poll() {
     T ele = this.queu.poll();
     if (ele != null) {
       size.decrementAndGet();
@@ -45,16 +53,31 @@ public class RecordBuffer<T> {
     return ele;
   }
 
-  public int size() {
+  public synchronized int size() {
     return this.size.get();
   }
 
-  public boolean isEmpty() {
+  public synchronized boolean isEmpty() {
     return this.queu.isEmpty();
   }
 
-  public void clear() {
+  public synchronized void clear() {
     this.queu.clear();
     this.size.set(0);
+  }
+
+  public synchronized List<T> drain(int batchSize) {
+    int size = Math.min(this.size(), batchSize);
+    List<T> batch = new ArrayList<>(size);
+
+    for (int i = 0; i < size; i++) {
+      T record = poll();
+      if (null != record) {
+        batch.add(record);
+      } else {
+        break;
+      }
+    }
+    return batch;
   }
 }

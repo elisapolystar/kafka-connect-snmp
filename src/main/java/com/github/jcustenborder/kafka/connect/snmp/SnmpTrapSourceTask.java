@@ -112,30 +112,15 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   }
 
 
-  private static List<SourceRecord> drain(int batchSize, RecordBuffer<SourceRecord> records) {
-    int size = Math.min(records.size(), batchSize);
-    log.debug("Non-empty buffer, draining {} records", size);
-    List<SourceRecord> batch = new ArrayList<>(size);
-
-    for (int i = 0; i < size; i++) {
-      SourceRecord record = records.poll();
-      if (null != record) {
-        batch.add(record);
-      } else {
-        break;
-      }
-    }
-
-    return batch.isEmpty() ? null : batch; // We want this to be null according to Kafka Connect poll() spec
-  }
-
   @Override
   public List<SourceRecord> poll() {
     try {
       if (this.recordBuffer.isEmpty()) {
         Thread.sleep(this.config.pollBackoffMs);
       } else {
-        return drain(this.config.batchSize, this.recordBuffer);
+        log.debug("Non-empty buffer, draining {} records", Math.min(recordBuffer.size(), config.batchSize));
+        List<SourceRecord> batch = recordBuffer.drain(this.config.batchSize);
+        return batch.isEmpty() ? null : batch; // We want this to be null according to Kafka Connect poll() spec
       }
     } catch (Exception err) {
       log.error("poll() - Issue with draining", err);
