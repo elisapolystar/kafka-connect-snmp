@@ -15,11 +15,6 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp.utils;
 
-import com.github.jcustenborder.kafka.connect.snmp.SnmpTrapSourceTask;
-import org.apache.kafka.connect.source.SourceRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
