@@ -48,11 +48,11 @@ public class RecordBuffer<T> {
     return ele;
   }
 
-  public synchronized int size() {
+  public int size() {
     return this.size.get();
   }
 
-  public synchronized boolean isEmpty() {
+  public boolean isEmpty() {
     return this.queu.isEmpty();
   }
 
