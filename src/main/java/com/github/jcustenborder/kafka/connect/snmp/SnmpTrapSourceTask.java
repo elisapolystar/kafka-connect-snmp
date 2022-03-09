@@ -19,7 +19,8 @@ package com.github.jcustenborder.kafka.connect.snmp;
 import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
-import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
+import com.github.jcustenborder.kafka.connect.snmp.utils.RecordBuffer;
+import com.github.jcustenborder.kafka.connect.snmp.utils.Utils;
 import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -57,8 +58,6 @@ import org.snmp4j.util.ThreadPool;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -77,13 +76,14 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   private Snmp snmp;
   PDUConverter converter;
   Time time = new SystemTime();
-  private SourceRecordConcurrentLinkedDeque recordBuffer;
+  private RecordBuffer<SourceRecord> recordBuffer;
 
   @Override
   public void start(Map<String, String> settings) {
     this.config = new SnmpTrapSourceConnectorConfig(settings);
     this.converter = new PDUConverter(this.time, config);
-    this.recordBuffer = new SourceRecordConcurrentLinkedDeque(this.config.batchSize, 0);
+    this.recordBuffer = new RecordBuffer<>();
+
     log.info("start() - Setting listen address with {} on {}:{}", this.config.listenProtocol, this.config.listenAddress, this.config.listenPort);
     log.info("start() - MPv3 support: {}", this.config.mpv3Enabled);
 
@@ -104,6 +104,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     this.snmp.addCommandResponder(this);
 
     if (this.config.mpv3Enabled) {
+      log.debug("Setting up Mpv3 with protocols {} and {}", this.config.authenticationProtocol, this.config.privacyProtocol);
       setupMpv3Usm(this.snmp, this.config, securityProtocols);
     }
 
@@ -113,13 +114,17 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   @Override
   public List<SourceRecord> poll() {
     try {
-      List<SourceRecord> records = new ArrayList<>(this.config.batchSize);
-      this.recordBuffer.drain(records, this.config.pollBackoffMs);
-      return records;
-    } catch (InterruptedException err) {
+      if (this.recordBuffer.isEmpty()) {
+        Thread.sleep(this.config.pollBackoffMs);
+      } else {
+        log.debug("Non-empty buffer, draining {} records", Math.min(recordBuffer.size(), config.batchSize));
+        List<SourceRecord> batch = recordBuffer.drain(this.config.batchSize);
+        return batch.isEmpty() ? null : batch; // We want this to be null according to Kafka Connect poll() spec
+      }
+    } catch (Exception err) {
       log.error("poll() - Issue with draining", err);
-      return Collections.emptyList();
     }
+    return null;
   }
 
   @Override
@@ -140,6 +145,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     } catch (IOException e) {
       log.error("Exception thrown while closing transport.", e);
     }
+    this.recordBuffer.clear();
 
   }
 
@@ -233,12 +239,11 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   }
 
   private void setupMpv3Usm(Snmp snmp, SnmpTrapSourceConnectorConfig config, SecurityProtocols sp) {
-    log.debug("Setting up Mpv3 with protocols {} and {}", config.authenticationProtocol, config.privacyProtocol);
     MPv3 mpv3 = ((MPv3) snmp.getMessageProcessingModel(MPv3.ID));
     USM usm = new USM(sp, new OctetString("SNMP Connector"), 0);
     usm.setEngineDiscoveryEnabled(true);
     SecurityModels sm = SecurityModels.getInstance().addSecurityModel(usm);
-    if (config.username != null && config.privacyPassphrase != null && config.authenticationPassphrase != null) {
+    if (Utils.noneNull(config.username, config.privacyPassphrase, config.authenticationPassphrase)) {
       UsmUser uu = new UsmUser(
           new OctetString(config.username),
           convertAuthenticationProtocol(config.authenticationProtocol),
@@ -262,7 +267,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     return md;
   }
 
-  public SourceRecordConcurrentLinkedDeque getRecordBuffer() {
+  public RecordBuffer<SourceRecord> getRecordBuffer() {
     return recordBuffer;
   }
 

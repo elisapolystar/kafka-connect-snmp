@@ -1,4 +1,4 @@
-package com.github.jcustenborder.kafka.connect.utils;
+package com.github.jcustenborder.kafka.connect.snmp.utils;
 /**
  * Copyright © 2021 Elisa Oyj
  * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
