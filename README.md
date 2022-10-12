@@ -34,10 +34,10 @@ Kafka related configuration properties can be deducted from [documentation](http
 
 ## MPv3 configuration properties
 
-| Name                              | Description                                                   | Type   | Default      | Valid Values                      | Importance |
-|-----------------------------------|---------------------------------------------------------------|--------|--------------|-----------------------------------|------------|
-| usm.username                      | Username used for USM with MPv3                               | string |              |                                   | medium     |
-| usm.passphrases.privacy           | Privacy passphrase for USM with MPv3                          | string |              |                                   | medium     |
-| usm.passphrases.authentication    | Authentication passphrase for USM with MPv3                   | string |              |                                   | medium     |
-| usm.protocols.privacy             | Privacy protocol used for MPv3 for defined user               | string | AES128       | [DES3, AES128]                    | medium     |
-| usm.protocols.authentication      | Authentication protocol used for MPv3 for defined user        | string | MD5          | [MD5, SHA]                        | medium     |
+| Name                              | Description                                                   | Type   | Default      | Valid Values           | Importance |
+|-----------------------------------|---------------------------------------------------------------|--------|--------------|------------------------|------------|
+| usm.username                      | Username used for USM with MPv3                               | string |              |                        | medium     |
+| usm.passphrases.privacy           | Privacy passphrase for USM with MPv3                          | string |              |                        | medium     |
+| usm.passphrases.authentication    | Authentication passphrase for USM with MPv3                   | string |              |                        | medium     |
+| usm.protocols.privacy             | Privacy protocol used for MPv3 for defined user               | string | AES128       | [DES3, AES128, AES256] | medium     |
+| usm.protocols.authentication      | Authentication protocol used for MPv3 for defined user        | string | MD5          | [MD5, SHA, SHA2_512]   | medium     |
