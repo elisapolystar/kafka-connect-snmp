@@ -30,16 +30,16 @@ import org.snmp4j.UserTarget;
 import org.snmp4j.mp.DefaultCounterListener;
 import org.snmp4j.mp.MPv3;
 import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
-import org.snmp4j.security.PrivDES;
+import org.snmp4j.security.PrivAES256;
 import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.USM;
 import org.snmp4j.security.UsmUser;
 import org.snmp4j.smi.Address;
-import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
@@ -70,12 +70,14 @@ public class SnmpV3TrapSourceTaskTest {
   private DefaultCounterListener defaultCounterListener;
 
 
-  List<User> validUsers = List.of(
-      new User("user1", defaultPrivacyPassphrase, defaultAuthPassphrase, AuthMD5.ID),
-      new User("user2", defaultPrivacyPassphrase, defaultAuthPassphrase, AuthSHA.ID)
+  List<V3User> validUsers = List.of(
+      new V3User("user1", defaultPrivacyPassphrase, defaultAuthPassphrase, AuthMD5.ID),
+      new V3User("user2", defaultPrivacyPassphrase, defaultAuthPassphrase, AuthSHA.ID),
+      new V3User("user3", defaultPrivacyPassphrase, defaultAuthPassphrase, AuthHMAC384SHA512.ID),
+      new V3User("user4", defaultPrivacyPassphrase, defaultAuthPassphrase, AuthHMAC384SHA512.ID, PrivAES256.ID)
   );
-  List<User> invalidUsers = List.of(
-      new User("fake", defaultPrivacyPassphrase, defaultAuthPassphrase)
+  List<V3User> invalidUsers = List.of(
+      new V3User("fake", defaultPrivacyPassphrase, defaultAuthPassphrase)
   );
 
   static {
@@ -100,47 +102,8 @@ public class SnmpV3TrapSourceTaskTest {
     SNMP4JSettings.setExtensibilityEnabled(false);
   }
 
-  private static class User {
-    public String username;
-    public String authPassphrase;
-    public String privacyPassphrase;
-    public OID authProtocol = AuthMD5.ID;
-    public OID privacyProtocol = PrivDES.ID;
-
-    public User(String username, String privacyPassphrase, String authPassphrase) {
-      this.username = username;
-      this.authPassphrase = authPassphrase;
-      this.privacyPassphrase = privacyPassphrase;
-    }
-
-    public User(String username, String authPassphrase, String privacyPassphrase, OID authProtocol) {
-      this.username = username;
-      this.authPassphrase = authPassphrase;
-      this.privacyPassphrase = privacyPassphrase;
-      this.authProtocol = authProtocol;
-    }
-
-    public User(String username, String authPassphrase, String privacyPassphrase, OID authProtocol, OID privacyProtocol) {
-      this.username = username;
-      this.authPassphrase = authPassphrase;
-      this.privacyPassphrase = privacyPassphrase;
-      this.authProtocol = authProtocol;
-      this.privacyProtocol = privacyProtocol;
-    }
-
-    public UsmUser toUsm() {
-      return new UsmUser(
-          new OctetString(this.username),
-          this.authProtocol,
-          new OctetString(this.privacyPassphrase),
-          privacyProtocol,
-          new OctetString(this.privacyPassphrase)
-      );
-    }
-  }
-
-  private List<UsmUser> convertUsers(List<User> users) {
-    return users.stream().map(User::toUsm).collect(Collectors.toList());
+  private List<UsmUser> convertUsers(List<V3User> users) {
+    return users.stream().map(V3User::toUsm).collect(Collectors.toList());
   }
 
   private void addUsmsToSending(List<UsmUser> users) {
@@ -246,6 +209,7 @@ public class SnmpV3TrapSourceTaskTest {
     assertEquals(i, task.getRecordBuffer().size(), "Sent traps should be equal to buffered records");
   }
 
+
   @Test
   public void shouldNotBufferTrapsWithInvalidUsers() throws IOException, InterruptedException {
     // should get rejected by "remote" task.snmp
@@ -282,7 +246,7 @@ public class SnmpV3TrapSourceTaskTest {
 
     CompletableFuture<Integer> v3s = CompletableFuture.supplyAsync(() -> {
       Integer i = null;
-      for (i = 0; i < 10; i++) {
+      for (i = 0; i < 20; i++) {
         ScopedPDU trap = createV3Trap("1.2.3.4.5", "some string");
         try {
           int randomTarget = new Random().nextInt(this.validV3Targets.size());
@@ -361,8 +325,8 @@ public class SnmpV3TrapSourceTaskTest {
     resetUsms(sendingUsm, receivingUsm);
 
     String username = "user";
-    User sendingUser = new User(username, "privacypass0", "authpass0000");
-    User receivingUser = new User(username, "00000000000", "000000000000");
+    V3User sendingUser = new V3User(username, "privacypass0", "authpass0000");
+    V3User receivingUser = new V3User(username, "00000000000", "000000000000");
 
     assertNotSame(sendingUser, receivingUser);
 

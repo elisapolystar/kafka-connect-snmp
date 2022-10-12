@@ -20,5 +20,6 @@ package com.github.jcustenborder.kafka.connect.snmp.enums;
  */
 public enum AuthenticationProtocol {
     MD5,
-    SHA
+    SHA,
+    SHA2_512
 }

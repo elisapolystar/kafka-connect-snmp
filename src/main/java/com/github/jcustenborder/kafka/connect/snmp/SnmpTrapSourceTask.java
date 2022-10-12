@@ -37,10 +37,12 @@ import org.snmp4j.Snmp;
 import org.snmp4j.mp.MPv1;
 import org.snmp4j.mp.MPv2c;
 import org.snmp4j.mp.MPv3;
+import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
 import org.snmp4j.security.Priv3DES;
 import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivAES256;
 import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.USM;
@@ -209,8 +211,10 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     if (mpv3Enabled) {
       securityProtocols.addAuthenticationProtocol(new AuthMD5());
       securityProtocols.addAuthenticationProtocol(new AuthSHA());
+      securityProtocols.addAuthenticationProtocol(new AuthHMAC384SHA512());
       securityProtocols.addPrivacyProtocol(new Priv3DES());
       securityProtocols.addPrivacyProtocol(new PrivAES128());
+      securityProtocols.addPrivacyProtocol(new PrivAES256());
     }
 
     return securityProtocols;
@@ -222,6 +226,8 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
         return Priv3DES.ID;
       case AES128:
         return PrivAES128.ID;
+      case AES256:
+        return PrivAES256.ID;
       default:
         return PrivAES128.ID;
     }
@@ -233,6 +239,8 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
         return AuthMD5.ID;
       case SHA:
         return AuthSHA.ID;
+      case SHA2_512:
+        return AuthHMAC384SHA512.ID;
       default:
         return AuthMD5.ID;
     }

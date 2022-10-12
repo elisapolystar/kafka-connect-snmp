@@ -60,6 +60,18 @@ public class SnmpTrapSourceConnectorConfigTest {
   }
 
 
+  public static Map<String, String> settingsV3(V3User v3User) {
+    Map<String, String> map = settingsV2();
+    map.put(SnmpTrapSourceConnectorConfig.USM_USERNAME, v3User.username);
+    map.put(SnmpTrapSourceConnectorConfig.USM_PRIVACY_PASSPHRASE, v3User.privacyPassphrase);
+    map.put(SnmpTrapSourceConnectorConfig.USM_AUTHENTICATION_PASSPHRASE, v3User.authPassphrase);
+    map.put(SnmpTrapSourceConnectorConfig.USM_PRIVACY_PROTOCOL, v3User.getPriv().toString());
+    map.put(SnmpTrapSourceConnectorConfig.USM_AUTHENTICATION_PROTOCOL, v3User.getAuth().toString());
+    map.put(SnmpTrapSourceConnectorConfig.MPV3_ENABLED_CONF, "true");
+
+    return map;
+  }
+
   @Test
   public static void convertAuthProtocols() {
     Map<String, String> m = settingsV3();
