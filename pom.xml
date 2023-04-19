@@ -31,7 +31,9 @@
         <url>https://github.com/elisapolystar/kafka-connect-snmp/issues</url>
     </issueManagement>
 
+
     <properties>
+        <excludedTestTags>load</excludedTestTags>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
 
@@ -53,6 +55,16 @@
             <version>31.1-jre</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>load</id>
+            <properties>
+                <excludedTestTags>""</excludedTestTags>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -60,7 +72,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <excludedGroups>load</excludedGroups>
+                    <excludedGroups>${excludedTestTags}</excludedGroups>
                 </configuration>
             </plugin>
             <plugin>
