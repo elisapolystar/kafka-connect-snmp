@@ -17,7 +17,11 @@ package com.github.jcustenborder.kafka.connect.snmp.utils;
 
 import java.util.LinkedList;
 import java.util.List;
-
+/**
+ * Class to handle constant time size check and concurrent deque ops
+ *
+ * @param <T>
+ */
 public class RecordBuffer<T> {
   private LinkedList<T> buffer;
   private final Object lock;
