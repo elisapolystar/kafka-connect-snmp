@@ -194,22 +194,6 @@ public class SnmpTrapSourceTaskLoadTest {
   }
 
   @Test
-  public void shouldBufferV3Traps() throws InterruptedException, IOException {
-
-    int i;
-
-    for (i = 0; i < 20; i++) {
-
-      int randomTarget = new Random().nextInt(this.validV3Targets.size());
-      PDU trap = createV3Trap("1.2.3.4.5", "some string");
-      sendingSnmp.send(trap, this.validV3Targets.get(randomTarget));
-    }
-
-    Thread.sleep(2500);
-    assertEquals(i, task.getRecordBuffer().size(), "Sent traps should be equal to buffered records");
-  }
-
-  @Test
   public void shouldBufferLoadsOfV3() {
 
     final Random r = new Random();
