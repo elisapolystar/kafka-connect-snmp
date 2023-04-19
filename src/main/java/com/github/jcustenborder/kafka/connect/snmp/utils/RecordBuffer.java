@@ -15,64 +15,55 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp.utils;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * Class to handle constant time size check and concurrent deque ops
  *
  * @param <T>
  */
 public class RecordBuffer<T> {
-
-  private final ConcurrentLinkedDeque<T> queu;
-  private final AtomicInteger size;
+  private LinkedList<T> buffer;
+  private final Object lock;
 
   public RecordBuffer() {
-    this.queu = new ConcurrentLinkedDeque<>();
-    this.size = new AtomicInteger(0);
+    buffer = new LinkedList<>();
+    lock = new Object();
   }
 
-  public synchronized void add(T ele) {
-    this.queu.add(ele);
-    size.incrementAndGet();
-  }
-
-  public synchronized T poll() {
-    T ele = this.queu.poll();
-    if (ele != null) {
-      size.decrementAndGet();
+  public void add(T element) {
+    synchronized (lock) {
+      buffer.add(element);
     }
-    return ele;
   }
 
+  public void addAll(T[] elements) {
+    synchronized (lock) {
+      for (T element : elements) {
+        buffer.add(element);
+      }
+    }
+  }
   public int size() {
-    return this.size.get();
+    synchronized (lock) {
+      return buffer.size();
+    }
   }
 
   public boolean isEmpty() {
-    return this.queu.isEmpty();
+    synchronized (lock) {
+      return buffer.isEmpty();
+    }
   }
 
-  public synchronized void clear() {
-    this.queu.clear();
-    this.size.set(0);
-  }
-
-  public synchronized List<T> drain(int batchSize) {
-    int size = Math.min(this.size(), batchSize);
-    List<T> batch = new ArrayList<>(size);
-
-    for (int i = 0; i < size; i++) {
-      T record = poll();
-      if (null != record) {
-        batch.add(record);
-      } else {
-        break;
+  public List<T> drain(int numRecords) {
+    LinkedList<T> result = new LinkedList<>();
+    synchronized (lock) {
+      while (numRecords > 0 && !buffer.isEmpty()) {
+        result.add(buffer.poll());
+        numRecords--;
       }
     }
-    return batch;
+    return result;
   }
 }

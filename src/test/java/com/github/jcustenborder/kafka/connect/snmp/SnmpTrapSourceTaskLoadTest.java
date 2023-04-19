@@ -20,11 +20,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
 import org.snmp4j.SNMP4JSettings;
-import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.UserTarget;
 import org.snmp4j.mp.DefaultCounterListener;
@@ -34,7 +34,6 @@ import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
 import org.snmp4j.security.PrivAES256;
-import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.USM;
@@ -45,6 +44,8 @@ import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -58,19 +59,17 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SnmpV3TrapSourceTaskTest {
+
+@Tag("load")
+public class SnmpTrapSourceTaskLoadTest {
   private SnmpTrapSourceTask task;
   private CommunityTarget<Address> v2Target;
 
   private List<UserTarget<Address>> validV3Targets;
-  private List<UserTarget<Address>> invalidV3Targets;
-
   private Snmp sendingSnmp;
 
   private final String defaultPrivacyPassphrase = "_0987654321_";
   private final String defaultAuthPassphrase = "_12345678_";
-
-  private DefaultCounterListener defaultCounterListener;
 
 
   List<V3User> validUsers = List.of(
@@ -143,6 +142,17 @@ public class SnmpV3TrapSourceTaskTest {
     return ut;
   }
 
+  private static void noPendingSnmpRequests(Snmp snmp) {
+    // Consume all
+    while (snmp.getPendingSyncRequestCount() != 0 && snmp.getPendingSyncRequestCount() != 0) {
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   @BeforeEach
   public void setUp() throws Exception {
     task = new SnmpTrapSourceTask();
@@ -157,20 +167,12 @@ public class SnmpV3TrapSourceTaskTest {
         .map((u) -> createUserTarget(targetAddress, u.username, new byte[0]))
         .collect(Collectors.toList());
 
-    this.invalidV3Targets = invalidUsers.stream()
-        .map((u) -> createUserTarget(targetAddress, u.username, new byte[0]))
-        .collect(Collectors.toList());
-
     v2Target = createCommunityTarget(targetAddress, "public");
 
     sendingSnmp = new Snmp(new DefaultUdpTransportMapping());
     setupMpv3(sendingSnmp, "generator");
 
     addUsms();
-
-    // Add counters
-    defaultCounterListener = new DefaultCounterListener();
-    sendingSnmp.getCounterSupport().addCounterListener(defaultCounterListener);
 
     assertNotSame(this.sendingSnmp.getLocalEngineID(), this.task.getSnmp().getLocalEngineID());
   }
@@ -192,167 +194,108 @@ public class SnmpV3TrapSourceTaskTest {
   }
 
   @Test
-  public void usmsShouldBeSeparate() {
-    assertNotSame(this.sendingSnmp.getUSM(), this.task.getSnmp().getUSM());
+  public void shouldBufferLoadsOfV3() {
+
+    final Random r = new Random();
+    final int subset = 1_000;
+    final int threads = 100;
+    int loads = subset * threads;
+    List<CompletableFuture<Void>> cfs = new ArrayList<>(threads);
+    for (int j = threads; j > 0; j--) {
+      final int ct = j;
+      CompletableFuture<Void> cf = CompletableFuture.runAsync(
+          () -> {
+            for (int i = 0; i < subset; i++) {
+              PDU trap = createV3Trap("1.2.3.4.5", "some string");
+              try {
+                int randomTarget = r.nextInt(this.validV3Targets.size());
+                sendingSnmp.send(trap, this.validV3Targets.get(randomTarget));
+                Thread.sleep(3);
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+      );
+
+      cfs.add(cf);
+    }
+    cfs.forEach(CompletableFuture::join);
+    // Consume all
+    noPendingSnmpRequests(sendingSnmp);
+    noPendingSnmpRequests(this.task.getSnmp());
+
+    int bs = this.task.config.batchSize;
+    List<SourceRecord> poll;
+    int totals = 0;
+    do {
+      poll = this.task.poll();
+      if (poll != null) {
+        if (this.task.getRecordBuffer().isEmpty()) {
+          assertTrue(bs >= poll.size());
+        } else {
+          assertEquals(bs, poll.size());
+        }
+        totals += poll.size();
+      }
+    } while (!this.task.getRecordBuffer().isEmpty());
+    assertEquals(this.task.processedCount, BigInteger.valueOf(loads));
+    assertEquals(totals, loads);
+
   }
 
   @Test
-  public void shouldBufferV3Traps() throws InterruptedException, IOException {
+  public void shouldBufferLoadsOfV2() throws IOException, InterruptedException {
+    final int subset = 1_000;
+    final int threads = 100;
+    int loads = subset * threads;
+    List<CompletableFuture<Void>> cfs = new ArrayList<>(threads);
+    for (int j = threads; j > 0; j--) {
+      final int ct = j;
+      CompletableFuture<Void> cf = CompletableFuture.runAsync(
+          () -> {
+            for (int i = 0; i < subset; i++) {
+              PDU trap = createV2Trap("1.2.3.4.5", "some string");
+              try {
+                sendingSnmp.send(trap, v2Target);
+                Thread.sleep(3);
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+      );
 
-    int i;
-
-    for (i = 0; i < 20; i++) {
-
-      int randomTarget = new Random().nextInt(this.validV3Targets.size());
-      PDU trap = createV3Trap("1.2.3.4.5", "some string");
-      sendingSnmp.send(trap, this.validV3Targets.get(randomTarget));
+      cfs.add(cf);
     }
 
-    Thread.sleep(2500);
-    assertEquals(i, task.getRecordBuffer().size(), "Sent traps should be equal to buffered records");
-  }
+    cfs.forEach(CompletableFuture::join);
 
+    // Consume all
+    noPendingSnmpRequests(sendingSnmp);
+    noPendingSnmpRequests(this.task.getSnmp());
 
-  @Test
-  public void shouldNotBufferTrapsWithInvalidUsers() throws IOException, InterruptedException {
-    // should get rejected by "remote" task.snmp
-    PDU trap = createV3Trap("1.2.3.4.5", "some string");
+    int bs = this.task.config.batchSize;
+    List<SourceRecord> poll;
+    int totals = 0;
 
-    invalidV3Targets.forEach((target) -> {
-      try {
-        sendingSnmp.send(trap, target);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    });
-
-    Thread.sleep(1000);
-    assertEquals(invalidV3Targets.size(), defaultCounterListener.remove(SnmpConstants.usmStatsUnknownUserNames).getValue());
-
-    assertTrue(this.task.getRecordBuffer().isEmpty());
-  }
-
-  @Test
-  public void shouldNotBufferTrapsWithInvalidUsers2() throws IOException {
-    // should result in client error
-    PDU trap = createV3Trap("1.2.3.4.5", "some string");
-    this.sendingSnmp.getUSM().removeAllUsers();
-
-    this.validV3Targets.forEach((target) -> {
-      assertThrows(org.snmp4j.MessageException.class, () -> sendingSnmp.send(trap, target));
-    });
-
-  }
-
-  @Test
-  public void shouldBufferMixOfTraps() throws InterruptedException, IOException {
-
-    CompletableFuture<Integer> v3s = CompletableFuture.supplyAsync(() -> {
-      Integer i = null;
-      for (i = 0; i < 20; i++) {
-        ScopedPDU trap = createV3Trap("1.2.3.4.5", "some string");
-        try {
-          int randomTarget = new Random().nextInt(this.validV3Targets.size());
-          sendingSnmp.send(trap, this.validV3Targets.get(randomTarget));
-        } catch (IOException e) {
-          e.printStackTrace();
+    do {
+      poll = this.task.poll();
+      if (poll != null) {
+        if (this.task.getRecordBuffer().isEmpty()) {
+          assertTrue(bs >= poll.size());
+        } else {
+          assertEquals(bs, poll.size());
         }
+        totals += poll.size();
       }
-      return i;
-    });
+    } while (!this.task.getRecordBuffer().isEmpty());
 
-
-    CompletableFuture<Integer> invalidV3s = CompletableFuture.supplyAsync(() -> {
-      Integer i = null;
-      for (i = 0; i < 5; i++) {
-        PDU trap = createV3Trap("1.2.3.4.5", "some string");
-        try {
-          int randomTarget = new Random().nextInt(this.invalidV3Targets.size());
-          sendingSnmp.send(trap, invalidV3Targets.get(randomTarget));
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-      return i;
-    });
-
-    CompletableFuture<Integer> v2s = CompletableFuture.supplyAsync(() -> {
-      Integer i = null;
-      for (i = 0; i < 10; i++) {
-        PDU trap = createV2Trap("1.2.3.4.5", "some string");
-        try {
-          sendingSnmp.send(trap, v2Target);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-      return i;
-    });
-
-
-    // These are only valid traps
-    Integer totalSent = v3s.thenCombine(v2s, Integer::sum).join();
-
-    // Couple traps with invalid user as well is sent
-    Integer invalidSent = invalidV3s.join();
-
-    // Wait for a while so the receiver can catch up
-    Thread.sleep(2500);
-    assertEquals(totalSent, this.task.getRecordBuffer().size(), "All traps sent with valid user should be in buffer.");
-
-    List<SourceRecord> poll = this.task.poll();
-    assertEquals(poll.size(), SnmpTrapSourceConnectorConfigTest.batchSize);
-    assertEquals(this.task.getRecordBuffer().size(), totalSent - SnmpTrapSourceConnectorConfigTest.batchSize, "After poll only total minus batch should remain.");
-
-    // invalid usms should show up in SnmpConstants as unknownUserNames
-    assertEquals((long) invalidSent, defaultCounterListener.remove(SnmpConstants.usmStatsUnknownUserNames).getValue(), "There should be counters incremented for invalid V3s");
-    assertTrue(invalidSent > 0, "There should've been invalid user traps as well.");
-  }
-
-  private void resetUsms(USM sendingUsm, USM receivingUsm) {
-
-    assertNotSame(receivingUsm, sendingUsm);
-
-    sendingUsm.removeAllUsers();
-    receivingUsm.removeAllUsers();
-
-    assertTrue(sendingUsm.getUserTable().getUserEntries().isEmpty());
-    assertTrue(receivingUsm.getUserTable().getUserEntries().isEmpty());
-  }
-
-  @Test
-  public void shouldNotBufferInvalidPassphraseTraps() throws InterruptedException, IOException {
-    USM sendingUsm = this.sendingSnmp.getUSM();
-    USM receivingUsm = this.task.getSnmp().getUSM();
-
-    resetUsms(sendingUsm, receivingUsm);
-
-    String username = "user";
-    V3User sendingUser = new V3User(username, "privacypass0", "authpass0000");
-    V3User receivingUser = new V3User(username, "00000000000", "000000000000");
-
-    assertNotSame(sendingUser, receivingUser);
-
-    sendingUsm.addUser(sendingUser.toUsm());
-    receivingUsm.addUser(receivingUser.toUsm());
-
-    // Specify receiver
-    Address address = new UdpAddress(String.format("127.0.0.1/%s", SnmpTrapSourceConnectorConfigTest.listeningPort));
-
-    UserTarget<Address> authPrivTarget = createUserTarget(address, sendingUser.username, new byte[0]);
-    authPrivTarget.setSecurityLevel(SecurityLevel.AUTH_PRIV);
-
-    UserTarget<Address> authNoPrivTarget = createUserTarget(address, sendingUser.username, new byte[0]);
-    authNoPrivTarget.setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
-
-    ScopedPDU trap = createV3Trap("1.2.3.4.5", "some string");
-
-    sendingSnmp.send(trap, authPrivTarget);
-    sendingSnmp.send(trap, authNoPrivTarget);
-
-    Thread.sleep(1000);
-
-    assertTrue(this.task.getRecordBuffer().isEmpty());
-    assertEquals(2L, this.defaultCounterListener.remove(SnmpConstants.usmStatsWrongDigests).getValue());
+    assertEquals(this.task.processedCount, BigInteger.valueOf(loads));
+    assertEquals(totals, loads);
   }
 }

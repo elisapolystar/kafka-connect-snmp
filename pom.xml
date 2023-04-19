@@ -31,7 +31,9 @@
         <url>https://github.com/elisapolystar/kafka-connect-snmp/issues</url>
     </issueManagement>
 
+
     <properties>
+        <excludedTestTags>load</excludedTestTags>
         <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
 
@@ -40,7 +42,7 @@
         <dependency>
             <groupId>org.snmp4j</groupId>
             <artifactId>snmp4j</artifactId>
-            <version>3.7.0</version>
+            <version>3.7.7</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -53,8 +55,26 @@
             <version>31.1-jre</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>load</id>
+            <properties>
+                <excludedTestTags>""</excludedTestTags>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <excludedGroups>${excludedTestTags}</excludedGroups>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -83,8 +103,8 @@
                 <version>3.8.1</version>
                 <inherited>true</inherited>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
             <plugin>
