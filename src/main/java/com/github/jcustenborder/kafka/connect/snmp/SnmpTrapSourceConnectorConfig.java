@@ -46,6 +46,11 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   static final int DISPATCHER_THREAD_POOL_SIZE_DEFAULT = 10;
   static final String DISPATCHER_THREAD_POOL_SIZE_DOC = "Number of threads to allocate for the thread pool.";
 
+  public static final String USE_MULTITHREADED_PROCESSING = "snmp4j.multithreaded";
+  static final boolean USE_MULTITHREADED_PROCESSING_DEFAULT = false;
+  static final String USE_MULTITHREADED_PROCESSING_DOC = "With true snmp4j is used in multithreaded mode with asyncMessageProcessing on";
+
+
   public static final String TOPIC_CONF = "topic";
   static final String TOPIC_DOC = "topic";
 
@@ -86,6 +91,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   public final int listenPort;
   public final String listenProtocol;
   public final int dispatcherThreadPoolSize;
+  public final boolean snmp4jUseMultithreaded;
   public final String topic;
   public final int batchSize;
   public final int pollBackoffMs;
@@ -104,6 +110,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
     this.listenPort = this.getInt(LISTEN_PORT_CONF);
     this.listenProtocol = this.getString(LISTEN_PROTOCOL_CONF);
     this.dispatcherThreadPoolSize = this.getInt(DISPATCHER_THREAD_POOL_SIZE_CONF);
+    this.snmp4jUseMultithreaded = this.getBoolean(USE_MULTITHREADED_PROCESSING);
     this.topic = this.getString(TOPIC_CONF);
     this.batchSize = this.getInt(BATCH_SIZE_CONF);
     this.pollBackoffMs = this.getInt(POLL_BACKOFF_MS_CONF);
@@ -124,7 +131,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
         .define(LISTEN_ADDRESS_CONF, Type.STRING, LISTEN_ADDRESS_DEFAULT, Importance.LOW, LISTEN_ADDRESS_DOC)
         .define(LISTEN_PORT_CONF, Type.INT, LISTEN_PORT_DEFAULT, Validators.validPort(1025, 65535), Importance.LOW, LISTEN_PORT_DOC)
         .define(LISTEN_PROTOCOL_CONF, Type.STRING, LISTEN_PROTOCOL_DEFAULT, ConfigDef.ValidString.in("UDP", "TCP"), Importance.LOW, LISTEN_PROTOCOL_DOC)
-        .define(DISPATCHER_THREAD_POOL_SIZE_CONF, Type.INT, DISPATCHER_THREAD_POOL_SIZE_DEFAULT, ConfigDef.Range.between(1, 100), Importance.LOW, DISPATCHER_THREAD_POOL_SIZE_DOC)
+
         .define(BATCH_SIZE_CONF, Type.INT, BATCH_SIZE_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, BATCH_SIZE_DOC)
         .define(POLL_BACKOFF_MS_CONF, Type.INT, POLL_BACKOFF_MS_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, POLL_BACKOFF_MS_DOC)
         .define(MPV3_ENABLED_CONF, Type.BOOLEAN, MPV3_ENABLED_DEFAULT, Importance.MEDIUM, MPV3_ENABLED_DOC)
@@ -134,7 +141,11 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
         .define(USM_AUTHENTICATION_PASSPHRASE, Type.STRING, USM_AUTHENTICATION_PASSPHRASE_DEFAULT, Importance.MEDIUM, USM_AUTHENTICATION_PASSPHRASE_DOC)
         .define(USM_PRIVACY_PASSPHRASE, Type.STRING, USM_PRIVACY_PASSPHRASE_DEFAULT, Importance.MEDIUM, USM_PRIVACY_PASSPHRASE_DOC)
         .define(USM_AUTHENTICATION_PROTOCOL, Type.STRING, USM_AUTHENTICATION_PROTOCOL_DEFAULT, ConfigDef.ValidString.in(authProtocols), Importance.MEDIUM, USM_AUTHENTICATION_PROTOCOL_DOC)
-        .define(USM_PRIVACY_PROTOCOL, Type.STRING, USM_PRIVACY_PROTOCOL_DEFAULT, ConfigDef.ValidString.in(privProtocols), Importance.MEDIUM, USM_PRIVACY_PROTOCOL_DOC);
+        .define(USM_PRIVACY_PROTOCOL, Type.STRING, USM_PRIVACY_PROTOCOL_DEFAULT, ConfigDef.ValidString.in(privProtocols), Importance.MEDIUM, USM_PRIVACY_PROTOCOL_DOC)
+
+        // Snmp4j configs
+        .define(USE_MULTITHREADED_PROCESSING, Type.BOOLEAN, USE_MULTITHREADED_PROCESSING_DEFAULT, Importance.LOW, USE_MULTITHREADED_PROCESSING_DOC)
+        .define(DISPATCHER_THREAD_POOL_SIZE_CONF, Type.INT, DISPATCHER_THREAD_POOL_SIZE_DEFAULT, ConfigDef.Range.between(1, 100), Importance.LOW, DISPATCHER_THREAD_POOL_SIZE_DOC);
   }
 
 }

@@ -45,6 +45,8 @@ import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -138,6 +140,17 @@ public class SnmpV3TrapSourceTaskTest {
     UserTarget<Address> ut = new UserTarget<>(address, new OctetString(username), authorativeEngineId);
     ut.setVersion(SnmpConstants.version3);
     return ut;
+  }
+
+  private static void noPendingSnmpRequests(Snmp snmp) {
+    // Consume all
+    while (snmp.getPendingSyncRequestCount() != 0 && snmp.getPendingSyncRequestCount() != 0) {
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   @BeforeEach
@@ -239,6 +252,112 @@ public class SnmpV3TrapSourceTaskTest {
       assertThrows(org.snmp4j.MessageException.class, () -> sendingSnmp.send(trap, target));
     });
 
+  }
+
+  @Test
+  public void shouldBufferLoadsOfV3() {
+
+    final Random r = new Random();
+    final int subset = 1_000;
+    final int threads = 100;
+    int loads = subset * threads;
+    List<CompletableFuture<Void>> cfs = new ArrayList<>(threads);
+    for(int j = threads; j > 0; j--) {
+      final int ct = j;
+      CompletableFuture<Void> cf = CompletableFuture.runAsync(
+          () -> {
+            for (int i = 0; i < subset; i++) {
+              PDU trap = createV3Trap("1.2.3.4.5", "some string");
+              try {
+                int randomTarget = r.nextInt(this.validV3Targets.size());
+                sendingSnmp.send(trap, this.validV3Targets.get(randomTarget));
+                Thread.sleep(3);
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+      );
+
+      cfs.add(cf);
+    }
+    cfs.forEach(CompletableFuture::join);
+    // Consume all
+    noPendingSnmpRequests(sendingSnmp);
+    noPendingSnmpRequests(this.task.getSnmp());
+
+    int bs = this.task.config.batchSize;
+    List<SourceRecord> poll;
+    int totals = 0;
+    do {
+      poll = this.task.poll();
+      if (poll != null) {
+        if (this.task.getRecordBuffer().isEmpty()) {
+          assertTrue(bs >= poll.size());
+        } else {
+          assertEquals(bs, poll.size());
+        }
+        totals += poll.size();
+      }
+    } while (!this.task.getRecordBuffer().isEmpty());
+    assertEquals(this.task.processedCount, BigInteger.valueOf(loads));
+    assertEquals(totals, loads);
+
+  }
+
+  @Test
+  public void shouldBufferLoadsOfV2() throws IOException, InterruptedException {
+    final int subset = 1_000;
+    final int threads = 100;
+    int loads = subset * threads;
+    List<CompletableFuture<Void>> cfs = new ArrayList<>(threads);
+    for(int j = threads; j > 0; j--) {
+      final int ct = j;
+      CompletableFuture<Void> cf = CompletableFuture.runAsync(
+          () -> {
+            for (int i = 0; i < subset; i++) {
+              PDU trap = createV2Trap("1.2.3.4.5", "some string");
+              try {
+                sendingSnmp.send(trap, v2Target);
+                Thread.sleep(3);
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+      );
+
+      cfs.add(cf);
+    }
+
+    cfs.forEach(CompletableFuture::join);
+
+    // Consume all
+    noPendingSnmpRequests(sendingSnmp);
+    noPendingSnmpRequests(this.task.getSnmp());
+
+    int bs = this.task.config.batchSize;
+    List<SourceRecord> poll;
+    int totals = 0;
+
+    do {
+      poll = this.task.poll();
+      if (poll != null) {
+        if (this.task.getRecordBuffer().isEmpty()) {
+          assertTrue(bs >= poll.size());
+        } else {
+          assertEquals(bs, poll.size());
+        }
+        totals += poll.size();
+      }
+    } while (!this.task.getRecordBuffer().isEmpty());
+
+    assertEquals(this.task.processedCount, BigInteger.valueOf(loads));
+    assertEquals(totals, loads);
   }
 
   @Test
@@ -352,5 +471,4 @@ public class SnmpV3TrapSourceTaskTest {
     assertTrue(this.task.getRecordBuffer().isEmpty());
     assertEquals(2L, this.defaultCounterListener.remove(SnmpConstants.usmStatsWrongDigests).getValue());
   }
-
 }

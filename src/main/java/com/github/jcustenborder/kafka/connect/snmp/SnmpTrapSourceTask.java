@@ -19,6 +19,7 @@ package com.github.jcustenborder.kafka.connect.snmp;
 import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
+import com.github.jcustenborder.kafka.connect.snmp.utils.BigIntCounter;
 import com.github.jcustenborder.kafka.connect.snmp.utils.RecordBuffer;
 import com.github.jcustenborder.kafka.connect.snmp.utils.Utils;
 import org.apache.kafka.common.utils.SystemTime;
@@ -30,10 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.CommandResponder;
 import org.snmp4j.CommandResponderEvent;
+import org.snmp4j.DefaultTimeoutModel;
 import org.snmp4j.MessageDispatcher;
 import org.snmp4j.MessageDispatcherImpl;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
+import org.snmp4j.TimeoutModel;
 import org.snmp4j.mp.MPv1;
 import org.snmp4j.mp.MPv2c;
 import org.snmp4j.mp.MPv3;
@@ -58,6 +61,7 @@ import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -73,10 +77,10 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   SnmpTrapSourceConnectorConfig config;
   AbstractTransportMapping<?> transport;
-  ThreadPool threadPool;
   MessageDispatcher messageDispatcher;
   private Snmp snmp;
   PDUConverter converter;
+  BigInteger processedCount = new BigInteger("0");
   Time time = new SystemTime();
   private RecordBuffer<SourceRecord> recordBuffer;
 
@@ -91,27 +95,37 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
     this.transport = setupTransport(this.config.listenAddress, this.config.listenProtocol, this.config.listenPort);
 
-    log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
-    this.threadPool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
-    this.messageDispatcher = createMessageDispatcher(this.threadPool, this.config.mpv3Enabled);
-    SecurityProtocols securityProtocols = setupSecurityProtocols(this.config.mpv3Enabled);
-
-    try {
-      this.transport.listen();
-    } catch (IOException e) {
-      throw new ConnectException("Exception thrown while calling transport.listen()", e);
+    if(this.config.snmp4jUseMultithreaded) {
+      log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
+      ThreadPool pool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
+      log.info("start() - Configuring multithreaded message dispatcher");
+      this.messageDispatcher = createMultiMessageDispatcher(pool, this.config.mpv3Enabled);
+    } else {
+      log.info("start() - Configuring single threaded dispatcher");
+      this.messageDispatcher = createSingleMessageDispatcher(config.mpv3Enabled);
+      this.transport.setAsyncMsgProcessingSupported(false);
     }
 
+    SecurityProtocols securityProtocols = setupSecurityProtocols(this.config.mpv3Enabled);
     this.snmp = new Snmp(this.messageDispatcher, this.transport);
-    this.snmp.addCommandResponder(this);
+
+    if(!this.config.snmp4jUseMultithreaded) {
+      this.snmp.addCommandResponder(this);
+    }
 
     if (this.config.mpv3Enabled) {
       log.debug("Setting up Mpv3 with protocols {} and {}", this.config.authenticationProtocol, this.config.privacyProtocol);
       setupMpv3Usm(this.snmp, this.config, securityProtocols);
     }
 
-  }
+    try {
+      this.transport.listen();
+      this.transport.setPriority(java.lang.Thread.MAX_PRIORITY); // Set the listener as highest priority
+    } catch (IOException e) {
+      throw new ConnectException("Exception thrown while calling transport.listen()", e);
+    }
 
+  }
 
   @Override
   public List<SourceRecord> poll() {
@@ -119,7 +133,12 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
       if (this.recordBuffer.isEmpty()) {
         Thread.sleep(this.config.pollBackoffMs);
       } else {
-        log.debug("Non-empty buffer, draining {} records", Math.min(recordBuffer.size(), config.batchSize));
+        log.debug("poll() - Non-empty buffer, draining {} records", Math.min(recordBuffer.size(), config.batchSize));
+        if(this.config.snmp4jUseMultithreaded) {
+          log.debug("poll() - Pending snmp requests count {}", this.snmp.getPendingAsyncRequestCount());
+        } else {
+          log.debug("poll() - Pending snmp requests count {}", this.snmp.getPendingSyncRequestCount());
+        }
         List<SourceRecord> batch = recordBuffer.drain(this.config.batchSize);
         return batch.isEmpty() ? null : batch; // We want this to be null according to Kafka Connect poll() spec
       }
@@ -131,12 +150,6 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   @Override
   public void stop() {
-    log.info("stop() - stopping threadpool");
-
-    if (this.threadPool != null) {
-      this.threadPool.cancel();
-    }
-
     log.info("stop() - closing transport.");
     try {
       if (this.transport != null) {
@@ -144,15 +157,16 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
       } else {
         log.error("Transport was null.");
       }
+      log.info("stop() - closing dispatcher");
+      this.messageDispatcher.stop();
     } catch (IOException e) {
       log.error("Exception thrown while closing transport.", e);
     }
-    this.recordBuffer.clear();
-
   }
 
   @Override
   public void processPdu(CommandResponderEvent event) {
+    processedCount = processedCount.add(BigInteger.ONE);
     log.debug("processPdu() - Received event from {}", event.getPeerAddress());
     PDU pdu = event.getPDU();
 
@@ -265,14 +279,23 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     mpv3.setSecurityModels(sm);
   }
 
-  private static MessageDispatcher createMessageDispatcher(ThreadPool threadPool, boolean mpv3Enabled) {
-    MultiThreadedMessageDispatcher md = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
+  private static MessageDispatcher addMessageProcessingModels(MessageDispatcher md, boolean mpv3Enabled) {
     md.addMessageProcessingModel(new MPv1());
     md.addMessageProcessingModel(new MPv2c());
+    md.addCounterListener(new BigIntCounter());
     if (mpv3Enabled) {
       md.addMessageProcessingModel(new MPv3());
     }
     return md;
+  }
+  private static MessageDispatcher createSingleMessageDispatcher(boolean mpv3Enabled) {
+      MessageDispatcher md = new MessageDispatcherImpl();
+      return addMessageProcessingModels(md, mpv3Enabled);
+  }
+
+  private static MessageDispatcher createMultiMessageDispatcher(ThreadPool threadPool, boolean mpv3Enabled) {
+    MultiThreadedMessageDispatcher md = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
+    return addMessageProcessingModels(md, mpv3Enabled);
   }
 
   public RecordBuffer<SourceRecord> getRecordBuffer() {
