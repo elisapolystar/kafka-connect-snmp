@@ -15,6 +15,7 @@ package com.github.jcustenborder.kafka.connect.snmp.utils;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.snmp4j.event.CounterEvent;
 import org.snmp4j.event.CounterListener;
 
@@ -36,7 +37,7 @@ public class BigIntCounter implements CounterListener {
   @Override
   public void incrementCounter(CounterEvent event) {
     String k = event.getOid().toDottedString();
-    if(counters.containsKey(k)) {
+    if (counters.containsKey(k)) {
       BigInteger bi = counters.get(k);
       counters.put(k, bi.add(BigInteger.ONE));
     } else {

@@ -262,7 +262,7 @@ public class SnmpV3TrapSourceTaskTest {
     final int threads = 100;
     int loads = subset * threads;
     List<CompletableFuture<Void>> cfs = new ArrayList<>(threads);
-    for(int j = threads; j > 0; j--) {
+    for (int j = threads; j > 0; j--) {
       final int ct = j;
       CompletableFuture<Void> cf = CompletableFuture.runAsync(
           () -> {
@@ -313,7 +313,7 @@ public class SnmpV3TrapSourceTaskTest {
     final int threads = 100;
     int loads = subset * threads;
     List<CompletableFuture<Void>> cfs = new ArrayList<>(threads);
-    for(int j = threads; j > 0; j--) {
+    for (int j = threads; j > 0; j--) {
       final int ct = j;
       CompletableFuture<Void> cf = CompletableFuture.runAsync(
           () -> {

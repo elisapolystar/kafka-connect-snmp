@@ -93,7 +93,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
     this.transport = setupTransport(this.config.listenAddress, this.config.listenProtocol, this.config.listenPort);
 
-    if(this.config.snmp4jUseMultithreaded) {
+    if (this.config.snmp4jUseMultithreaded) {
       log.info("start() - Configuring ThreadPool DispatchPool to {} thread(s)", this.config.dispatcherThreadPoolSize);
       ThreadPool pool = ThreadPool.create("DispatchPool", this.config.dispatcherThreadPoolSize);
       log.info("start() - Configuring multithreaded message dispatcher");
@@ -107,7 +107,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     SecurityProtocols securityProtocols = setupSecurityProtocols(this.config.mpv3Enabled);
     this.snmp = new Snmp(this.messageDispatcher, this.transport);
 
-    if(!this.config.snmp4jUseMultithreaded) {
+    if (!this.config.snmp4jUseMultithreaded) {
       this.snmp.addCommandResponder(this);
     }
 
@@ -132,7 +132,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
         Thread.sleep(this.config.pollBackoffMs);
       } else {
         log.debug("poll() - Non-empty buffer, draining {} records", Math.min(recordBuffer.size(), config.batchSize));
-        if(this.config.snmp4jUseMultithreaded) {
+        if (this.config.snmp4jUseMultithreaded) {
           log.debug("poll() - Pending snmp requests count {}", this.snmp.getPendingAsyncRequestCount());
         } else {
           log.debug("poll() - Pending snmp requests count {}", this.snmp.getPendingSyncRequestCount());
@@ -286,9 +286,10 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     }
     return md;
   }
+
   private static MessageDispatcher createSingleMessageDispatcher(boolean mpv3Enabled) {
-      MessageDispatcher md = new MessageDispatcherImpl();
-      return addMessageProcessingModels(md, mpv3Enabled);
+    MessageDispatcher md = new MessageDispatcherImpl();
+    return addMessageProcessingModels(md, mpv3Enabled);
   }
 
   private static MessageDispatcher createMultiMessageDispatcher(ThreadPool threadPool, boolean mpv3Enabled) {
