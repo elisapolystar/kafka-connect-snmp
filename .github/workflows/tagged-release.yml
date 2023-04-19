@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
           cache: 'maven'
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
           cache: 'maven'
       - name: Build with Maven
         run: mvn -B package --file pom.xml -Dmaven.test.skip # Tests are already run
