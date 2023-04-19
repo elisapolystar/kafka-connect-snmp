@@ -100,7 +100,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
       this.messageDispatcher = createMultiMessageDispatcher(pool, this.config.mpv3Enabled);
     } else {
       log.info("start() - Configuring single threaded dispatcher");
-      this.messageDispatcher = createSingleMessageDispatcher(config.mpv3Enabled);
+      this.messageDispatcher = createSingleMessageDispatcher(this.config.mpv3Enabled);
       this.transport.setAsyncMsgProcessingSupported(false);
     }
 
