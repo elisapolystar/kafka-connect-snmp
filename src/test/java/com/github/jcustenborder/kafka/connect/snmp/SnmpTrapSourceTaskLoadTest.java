@@ -210,7 +210,7 @@ public class SnmpTrapSourceTaskLoadTest {
               try {
                 int randomTarget = r.nextInt(this.validV3Targets.size());
                 sendingSnmp.send(trap, this.validV3Targets.get(randomTarget));
-                Thread.sleep(10);
+                Thread.sleep(3);
               } catch (IOException e) {
                 e.printStackTrace();
               } catch (InterruptedException e) {
@@ -260,7 +260,7 @@ public class SnmpTrapSourceTaskLoadTest {
               PDU trap = createV2Trap("1.2.3.4.5", "some string");
               try {
                 sendingSnmp.send(trap, v2Target);
-                Thread.sleep(10);
+                Thread.sleep(3);
               } catch (IOException e) {
                 e.printStackTrace();
               } catch (InterruptedException e) {
