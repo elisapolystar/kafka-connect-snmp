@@ -1,4 +1,3 @@
-package com.github.jcustenborder.kafka.connect.snmp.utils;
 /**
  * Copyright © 2021 Elisa Oyj
  * Copyright © 2017 Jeremy Custenborder (jcustenborder@gmail.com)
@@ -15,6 +14,7 @@ package com.github.jcustenborder.kafka.connect.snmp.utils;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.github.jcustenborder.kafka.connect.snmp.utils;
 
 import org.snmp4j.event.CounterEvent;
 import org.snmp4j.event.CounterListener;
