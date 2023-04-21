@@ -106,10 +106,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
     SecurityProtocols securityProtocols = setupSecurityProtocols(this.config.mpv3Enabled);
     this.snmp = new Snmp(this.messageDispatcher, this.transport);
-
-    if (!this.config.snmp4jUseMultithreaded) {
-      this.snmp.addCommandResponder(this);
-    }
+    this.snmp.addCommandResponder(this);
 
     if (this.config.mpv3Enabled) {
       log.debug("Setting up Mpv3 with protocols {} and {}", this.config.authenticationProtocol, this.config.privacyProtocol);
