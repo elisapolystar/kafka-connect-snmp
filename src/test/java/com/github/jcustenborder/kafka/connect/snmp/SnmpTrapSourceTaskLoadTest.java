@@ -241,7 +241,7 @@ public class SnmpTrapSourceTaskLoadTest {
         totals += poll.size();
       }
     } while (!this.task.getRecordBuffer().isEmpty());
-    assertEquals(this.task.processedCount, BigInteger.valueOf(loads));
+    assertEquals(this.task.getMetrics().getProcessed(), loads);
     assertEquals(totals, loads);
 
   }
@@ -295,7 +295,7 @@ public class SnmpTrapSourceTaskLoadTest {
       }
     } while (!this.task.getRecordBuffer().isEmpty());
 
-    assertEquals(this.task.processedCount, BigInteger.valueOf(loads));
+    assertEquals(this.task.getMetrics().getProcessed(), loads);
     assertEquals(totals, loads);
   }
 }

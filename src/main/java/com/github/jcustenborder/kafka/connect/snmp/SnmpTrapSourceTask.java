@@ -18,6 +18,8 @@ package com.github.jcustenborder.kafka.connect.snmp;
 
 import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
+import com.github.jcustenborder.kafka.connect.snmp.monitor.SnmpMetrics;
+import com.github.jcustenborder.kafka.connect.snmp.monitor.SnmpMetricsMBean;
 import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
 import com.github.jcustenborder.kafka.connect.snmp.utils.BigIntCounter;
 import com.github.jcustenborder.kafka.connect.snmp.utils.RecordBuffer;
@@ -58,8 +60,15 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectName;
+import javax.management.StandardMBean;
 import java.io.IOException;
-import java.math.BigInteger;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -67,6 +76,9 @@ import java.util.Map;
 
 public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   static final Logger log = LoggerFactory.getLogger(SnmpTrapSourceTask.class);
+  private MBeanServer mbs;
+  private ObjectName mbeanName;
+  private SnmpMetrics metrics;
 
   @Override
   public String version() {
@@ -78,7 +90,6 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   MessageDispatcher messageDispatcher;
   private Snmp snmp;
   PDUConverter converter;
-  BigInteger processedCount = new BigInteger("0");
   Time time = new SystemTime();
   private RecordBuffer<SourceRecord> recordBuffer;
 
@@ -87,6 +98,15 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     this.config = new SnmpTrapSourceConnectorConfig(settings);
     this.converter = new PDUConverter(this.time, config);
     this.recordBuffer = new RecordBuffer<>();
+    this.metrics = new SnmpMetrics();
+
+    if(config.collectSnmpMetrics) {
+      try  {
+        wireMetricsToJMX(this.metrics);
+      } catch (Exception err) {
+        log.warn("start() - could not wire metrics to JMX");
+      }
+    }
 
     log.info("start() - Setting listen address with {} on {}:{}", this.config.listenProtocol, this.config.listenAddress, this.config.listenPort);
     log.info("start() - MPv3 support: {}", this.config.mpv3Enabled);
@@ -122,6 +142,12 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   }
 
+  private void wireMetricsToJMX(SnmpMetricsMBean metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+    mbs = ManagementFactory.getPlatformMBeanServer();
+    mbeanName = new ObjectName("com.github.jcustenborder.kafka.connect.snmp:type=basic,name=snmpmetrics");
+    mbs.registerMBean(metrics, mbeanName);
+  }
+
   @Override
   public List<SourceRecord> poll() {
     try {
@@ -135,6 +161,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
           log.debug("poll() - Pending snmp requests count {}", this.snmp.getPendingSyncRequestCount());
         }
         List<SourceRecord> batch = recordBuffer.drain(this.config.batchSize);
+        metrics.addPolled(batch.size());
         return batch.isEmpty() ? null : batch; // We want this to be null according to Kafka Connect poll() spec
       }
     } catch (Exception err) {
@@ -157,11 +184,19 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     } catch (IOException e) {
       log.error("Exception thrown while closing transport.", e);
     }
+
+    try {
+      if (mbs != null && mbeanName != null) {
+        mbs.unregisterMBean(mbeanName);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
   public void processPdu(CommandResponderEvent event) {
-    processedCount = processedCount.add(BigInteger.ONE);
+    metrics.incrementToProcess();
     log.debug("processPdu() - Received event from {}", event.getPeerAddress());
     PDU pdu = event.getPDU();
 
@@ -179,6 +214,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
     SourceRecord sourceRecord = converter.convert(event);
     this.recordBuffer.add(sourceRecord);
+    metrics.incrementProcessed();
   }
 
   private static AbstractTransportMapping<?> setupTransport(String address, String listenProtocol, int port) {
@@ -304,5 +340,9 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   public Snmp getSnmp() {
     return snmp;
+  }
+
+  public SnmpMetrics getMetrics() {
+    return metrics;
   }
 }
