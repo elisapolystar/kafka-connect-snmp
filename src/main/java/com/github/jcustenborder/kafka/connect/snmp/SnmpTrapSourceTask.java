@@ -311,7 +311,6 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   private static MessageDispatcher addMessageProcessingModels(MessageDispatcher md, boolean mpv3Enabled) {
     md.addMessageProcessingModel(new MPv1());
     md.addMessageProcessingModel(new MPv2c());
-    md.addCounterListener(new BigIntCounter());
     if (mpv3Enabled) {
       md.addMessageProcessingModel(new MPv3());
     }

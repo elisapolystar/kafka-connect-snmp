@@ -27,7 +27,6 @@ import org.snmp4j.PDU;
 import org.snmp4j.SNMP4JSettings;
 import org.snmp4j.Snmp;
 import org.snmp4j.UserTarget;
-import org.snmp4j.mp.DefaultCounterListener;
 import org.snmp4j.mp.MPv3;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.security.AuthHMAC384SHA512;
@@ -44,12 +43,10 @@ import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -57,7 +54,6 @@ import static com.github.jcustenborder.kafka.connect.snmp.pdu.PDUGen.createV2Tra
 import static com.github.jcustenborder.kafka.connect.snmp.pdu.PDUGen.createV3Trap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -94,13 +90,13 @@ public class SnmpTrapSourceTaskLoadTest {
   }
 
   @BeforeAll
-  public static void setupBeforeClass() throws Exception {
+  public static void setupBeforeClass() {
     SNMP4JSettings.setExtensibilityEnabled(true);
     SecurityProtocols.getInstance().addDefaultProtocols();
   }
 
   @AfterAll
-  public static void tearDownAfterClass() throws Exception {
+  public static void tearDownAfterClass() {
     SecurityProtocols.setSecurityProtocols(null);
     SNMP4JSettings.setExtensibilityEnabled(false);
   }
