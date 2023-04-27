@@ -21,7 +21,6 @@ import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.monitor.SnmpMetrics;
 import com.github.jcustenborder.kafka.connect.snmp.monitor.SnmpMetricsMBean;
 import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
-import com.github.jcustenborder.kafka.connect.snmp.utils.BigIntCounter;
 import com.github.jcustenborder.kafka.connect.snmp.utils.RecordBuffer;
 import com.github.jcustenborder.kafka.connect.snmp.utils.Utils;
 import org.apache.kafka.common.utils.SystemTime;
@@ -66,7 +65,6 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
-import javax.management.StandardMBean;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -100,8 +98,8 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     this.recordBuffer = new RecordBuffer<>();
     this.metrics = new SnmpMetrics();
 
-    if(config.collectSnmpMetrics) {
-      try  {
+    if (config.collectSnmpMetrics) {
+      try {
         wireMetricsToJMX(this.metrics);
       } catch (Exception err) {
         log.warn("start() - could not wire metrics to JMX");
