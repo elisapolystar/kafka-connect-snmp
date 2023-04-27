@@ -59,12 +59,18 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 
+import javax.management.Attribute;
+import javax.management.AttributeNotFoundException;
 import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
+import javax.management.InvalidAttributeValueException;
+import javax.management.MBeanException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
+import javax.management.ReflectionException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -140,10 +146,13 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   }
 
-  private void wireMetricsToJMX(SnmpMetricsMBean metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+  private void wireMetricsToJMX(SnmpMetricsMBean metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanException, ReflectionException, AttributeNotFoundException, InstanceNotFoundException, InvalidAttributeValueException {
     mbs = ManagementFactory.getPlatformMBeanServer();
     mbeanName = new ObjectName("com.github.jcustenborder.kafka.connect.snmp:type=SnmpTrapSourceTask,name=SNMP");
     mbs.registerMBean(metrics, mbeanName);
+    mbs.setAttribute(mbeanName, new Attribute("Processed", metrics.getProcessed()));
+    mbs.setAttribute(mbeanName, new Attribute("ToProcess", metrics.getToProcess()));
+    mbs.setAttribute(mbeanName, new Attribute("Polled", metrics.getPolled()));
   }
 
   @Override
