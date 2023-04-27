@@ -86,6 +86,10 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   static final String USM_AUTHENTICATION_PROTOCOL_DOC = "Authentication protocl for USM with MPv3";
   static final String USM_AUTHENTICATION_PROTOCOL_DEFAULT = AuthenticationProtocol.MD5.toString();
 
+  public static final String COLLECT_METRICS_SNMP = "metrics.collect.snmp";
+  static final String COLLECT_METRICS_SNMP_DOC = "Defined if collect metrics from SNMP Source Task";
+  static final boolean COLLECT_METRICS_SNMP_DEFAULT = true;
+
 
   public final String listenAddress;
   public final int listenPort;
@@ -102,6 +106,8 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   public final AuthenticationProtocol authenticationProtocol;
   public final PrivacyProtocol privacyProtocol;
 
+  public final boolean collectSnmpMetrics;
+
 
   public SnmpTrapSourceConnectorConfig(Map<String, String> parsedConfig) {
     super(conf(), parsedConfig, false);
@@ -115,6 +121,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
     this.batchSize = this.getInt(BATCH_SIZE_CONF);
     this.pollBackoffMs = this.getInt(POLL_BACKOFF_MS_CONF);
     this.mpv3Enabled = this.getBoolean(MPV3_ENABLED_CONF);
+    this.collectSnmpMetrics = this.getBoolean(COLLECT_METRICS_SNMP);
     this.username = this.getString(USM_USERNAME);
     this.authenticationPassphrase = this.getString(USM_AUTHENTICATION_PASSPHRASE);
     this.privacyPassphrase = this.getString(USM_PRIVACY_PASSPHRASE);
@@ -135,6 +142,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
         .define(BATCH_SIZE_CONF, Type.INT, BATCH_SIZE_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, BATCH_SIZE_DOC)
         .define(POLL_BACKOFF_MS_CONF, Type.INT, POLL_BACKOFF_MS_DEFAULT, ConfigDef.Range.between(10, Integer.MAX_VALUE), Importance.MEDIUM, POLL_BACKOFF_MS_DOC)
         .define(MPV3_ENABLED_CONF, Type.BOOLEAN, MPV3_ENABLED_DEFAULT, Importance.MEDIUM, MPV3_ENABLED_DOC)
+        .define(COLLECT_METRICS_SNMP, Type.BOOLEAN, COLLECT_METRICS_SNMP_DEFAULT, Importance.MEDIUM, COLLECT_METRICS_SNMP_DOC)
 
         // MPv3 configs
         .define(USM_USERNAME, Type.STRING, USM_USERNAME_DEFAULT, Importance.MEDIUM, USM_USERNAME_DOC)
