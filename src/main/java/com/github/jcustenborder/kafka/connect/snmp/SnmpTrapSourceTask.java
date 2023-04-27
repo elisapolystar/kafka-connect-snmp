@@ -144,7 +144,7 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   private void wireMetricsToJMX(SnmpMetricsMBean metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
     mbs = ManagementFactory.getPlatformMBeanServer();
-    mbeanName = new ObjectName("com.github.jcustenborder.kafka.connect.snmp:type=basic,name=snmpmetrics");
+    mbeanName = new ObjectName("com.github.jcustenborder.kafka.connect.snmp:type=SnmpTrapSourceTask,name=SNMP");
     mbs.registerMBean(metrics, mbeanName);
   }
 
