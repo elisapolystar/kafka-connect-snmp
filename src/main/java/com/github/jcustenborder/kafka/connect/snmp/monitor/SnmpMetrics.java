@@ -16,7 +16,9 @@
  */
 package com.github.jcustenborder.kafka.connect.snmp.monitor;
 
-public class SnmpMetrics implements SnmpMetricsMBean {
+import org.weakref.jmx.Managed;
+
+public class SnmpMetrics {
   final Counter processed;
   final Counter toProcess;
   final Counter polled;
@@ -39,17 +41,17 @@ public class SnmpMetrics implements SnmpMetricsMBean {
     this.polled.add(n);
   }
 
-  @Override
+  @Managed
   public int getProcessed() {
     return processed.get();
   }
 
-  @Override
+  @Managed
   public int getToProcess() {
     return toProcess.get();
   }
 
-  @Override
+  @Managed
   public int getPolled() {
     return polled.get();
   }

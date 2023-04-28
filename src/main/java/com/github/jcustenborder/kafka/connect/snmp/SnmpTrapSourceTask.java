@@ -19,7 +19,6 @@ package com.github.jcustenborder.kafka.connect.snmp;
 import com.github.jcustenborder.kafka.connect.snmp.enums.AuthenticationProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.enums.PrivacyProtocol;
 import com.github.jcustenborder.kafka.connect.snmp.monitor.SnmpMetrics;
-import com.github.jcustenborder.kafka.connect.snmp.monitor.SnmpMetricsMBean;
 import com.github.jcustenborder.kafka.connect.snmp.pdu.PDUConverter;
 import com.github.jcustenborder.kafka.connect.snmp.utils.RecordBuffer;
 import com.github.jcustenborder.kafka.connect.snmp.utils.Utils;
@@ -58,8 +57,8 @@ import org.snmp4j.transport.DefaultTcpTransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
+import org.weakref.jmx.MBeanExporter;
 
-import javax.management.Attribute;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.InstanceNotFoundException;
@@ -145,13 +144,10 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   }
 
-  private void wireMetricsToJMX(SnmpMetricsMBean metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanException, ReflectionException, AttributeNotFoundException, InstanceNotFoundException, InvalidAttributeValueException {
+  private void wireMetricsToJMX(SnmpMetrics metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanException, ReflectionException, AttributeNotFoundException, InstanceNotFoundException, InvalidAttributeValueException {
     mbs = ManagementFactory.getPlatformMBeanServer();
-    mbeanName = new ObjectName("com.github.jcustenborder.kafka.connect.snmp:type=SnmpTrapSourceTask,name=SNMP");
-    mbs.registerMBean(metrics, mbeanName);
-    mbs.setAttribute(mbeanName, new Attribute("Processed", metrics.getProcessed()));
-    mbs.setAttribute(mbeanName, new Attribute("ToProcess", metrics.getToProcess()));
-    mbs.setAttribute(mbeanName, new Attribute("Polled", metrics.getPolled()));
+    MBeanExporter exporter = new MBeanExporter(mbs);
+    exporter.export("com.github.jcustenborder.kafka.connect.snmp:name=Metrics", metrics);
   }
 
   @Override
