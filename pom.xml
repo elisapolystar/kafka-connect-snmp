@@ -130,6 +130,38 @@
                     <detectJavaApiLink>false</detectJavaApiLink>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.2.2</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>checkstyle.xml</configLocation>
+                            <encoding>UTF-8</encoding>
+                            <consoleOutput>true</consoleOutput>
+                            <failsOnError>true</failsOnError>
+                            <includeResources>false</includeResources>
+                            <includeTestResources>false</includeTestResources>
+                            <sourceDirectories>
+                                <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.jcustenborder.kafka.connect</groupId>
+                        <artifactId>kafka-connect-style-checkstyle</artifactId>
+                        <version>${kafka-connect-style.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 </project>

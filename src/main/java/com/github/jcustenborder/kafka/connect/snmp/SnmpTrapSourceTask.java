@@ -59,16 +59,7 @@ import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 import org.weakref.jmx.MBeanExporter;
 
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
-import javax.management.InvalidAttributeValueException;
-import javax.management.MBeanException;
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
-import javax.management.ObjectName;
-import javax.management.ReflectionException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -79,8 +70,9 @@ import java.util.Map;
 public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   static final Logger log = LoggerFactory.getLogger(SnmpTrapSourceTask.class);
   private MBeanServer mbs;
-  private ObjectName mbeanName;
+  private MBeanExporter exporter;
   private SnmpMetrics metrics;
+  private final String metricsName = "com.github.jcustenborder.kafka.connect.snmp:name=Metrics";
 
   @Override
   public String version() {
@@ -144,10 +136,10 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
 
   }
 
-  private void wireMetricsToJMX(SnmpMetrics metrics) throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanException, ReflectionException, AttributeNotFoundException, InstanceNotFoundException, InvalidAttributeValueException {
+  private void wireMetricsToJMX(SnmpMetrics metrics) {
     mbs = ManagementFactory.getPlatformMBeanServer();
-    MBeanExporter exporter = new MBeanExporter(mbs);
-    exporter.export("com.github.jcustenborder.kafka.connect.snmp:name=Metrics", metrics);
+    exporter = new MBeanExporter(mbs);
+    exporter.export(metricsName, metrics);
   }
 
   @Override
@@ -188,8 +180,8 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     }
 
     try {
-      if (mbs != null && mbeanName != null) {
-        mbs.unregisterMBean(mbeanName);
+      if (mbs != null && exporter != null) {
+        exporter.unexport(metricsName);
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -268,29 +260,19 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
   }
 
   private OID convertPrivacyProtocol(PrivacyProtocol privacyProtocol) {
-    switch (privacyProtocol) {
-      case DES3:
-        return Priv3DES.ID;
-      case AES128:
-        return PrivAES128.ID;
-      case AES256:
-        return PrivAES256.ID;
-      default:
-        return PrivAES128.ID;
-    }
+    return switch (privacyProtocol) {
+      case DES3 -> Priv3DES.ID;
+      case AES128 -> PrivAES128.ID;
+      case AES256 -> PrivAES256.ID;
+    };
   }
 
   private OID convertAuthenticationProtocol(AuthenticationProtocol authenticationProtocol) {
-    switch (authenticationProtocol) {
-      case MD5:
-        return AuthMD5.ID;
-      case SHA:
-        return AuthSHA.ID;
-      case SHA2_512:
-        return AuthHMAC384SHA512.ID;
-      default:
-        return AuthMD5.ID;
-    }
+    return switch (authenticationProtocol) {
+      case MD5 -> AuthMD5.ID;
+      case SHA -> AuthSHA.ID;
+      case SHA2_512 -> AuthHMAC384SHA512.ID;
+    };
   }
 
   private void setupMpv3Usm(Snmp snmp, SnmpTrapSourceConnectorConfig config, SecurityProtocols sp) {
