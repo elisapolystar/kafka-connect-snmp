@@ -21,23 +21,24 @@ Kafka related configuration properties can be deducted from [documentation](http
 
 ## General configuration properties
 
-| Name                              | Description                                                   | Type   | Default      | Valid Values                      | Importance |
-|-----------------------------------|---------------------------------------------------------------|--------|--------------|-----------------------------------|------------|
-| topic                             | topic                                                         | string |              |                                   | high       |
-| batch.size                        | Number of records to return in a single batch.                | int    | 1024         | [10,...,2147483647]               | medium     |
-| poll.backoff.ms                   | The amount of time in ms to wait if no records are returned.  | long   | 250          | [10,...,2147483647]               | medium     |
-| dispatcher.thread.pool.size       | Number of threads to allocate for the thread pool.            | int    | 10           | [1,...,100]                       | low        |
-| listen.address                    | IP address to listen for messages on.                         | string | 0.0.0.0      |                                   | low        |
-| listen.port                       | Port to listen on.                                            | int    | 10161        | ValidPort{start=1025, end=65535}  | low        |
-| mpv3.enabled                      | 'true' if mpv3 is enabled                                     | boolean| false        | [true, false]                     | medium     |
-
+| Name                        | Description                                                  | Type   | Default      | Valid Values                      | Importance |
+|-----------------------------|--------------------------------------------------------------|--------|--------------|-----------------------------------|------------|
+| topic                       | topic                                                        | string |              |                                   | high       |
+| batch.size                  | Number of records to return in a single batch.               | int    | 1024         | [10,...,2147483647]               | medium     |
+| poll.backoff.ms             | The amount of time in ms to wait if no records are returned. | long   | 250          | [10,...,2147483647]               | medium     |
+| dispatcher.thread.pool.size | Number of threads to allocate for the thread pool.           | int    | 10           | [1,...,100]                       | low        |
+| listen.address              | IP address to listen for messages on.                        | string | 0.0.0.0      |                                   | low        |
+| listen.port                 | Port to listen on.                                           | int    | 10161        | ValidPort{start=1025, end=65535}  | low        |
+| mpv3.enabled                | 'true' if mpv3 is enabled                                    | boolean| false        | [true, false]                     | medium     |
+ 
 
 ## MPv3 configuration properties
 
-| Name                              | Description                                                   | Type   | Default      | Valid Values           | Importance |
-|-----------------------------------|---------------------------------------------------------------|--------|--------------|------------------------|------------|
-| usm.username                      | Username used for USM with MPv3                               | string |              |                        | medium     |
-| usm.passphrases.privacy           | Privacy passphrase for USM with MPv3                          | string |              |                        | medium     |
-| usm.passphrases.authentication    | Authentication passphrase for USM with MPv3                   | string |              |                        | medium     |
-| usm.protocols.privacy             | Privacy protocol used for MPv3 for defined user               | string | AES128       | [DES3, AES128, AES256] | medium     |
-| usm.protocols.authentication      | Authentication protocol used for MPv3 for defined user        | string | MD5          | [MD5, SHA, SHA2_512]   | medium     |
+| Name                           | Description                                                    | Type   | Default      | Valid Values           | Importance |
+|--------------------------------|----------------------------------------------------------------|--------|--------------|------------------------|------------|
+| usm.username                   | Username used for USM with MPv3                                | string |              |                        | medium     |
+| usm.noauthnoprivenabled        | 'true' if mpv3 is enabled without authentication and privacy   | boolean| false        | [true, false]          | medium     |
+| usm.passphrases.privacy        | Privacy passphrase for USM with MPv3                           | string |              |                        | medium     |
+| usm.passphrases.authentication | Authentication passphrase for USM with MPv3                    | string |              |                        | medium     |
+| usm.protocols.privacy          | Privacy protocol used for MPv3 for defined user                | string | AES128       | [DES3, AES128, AES256] | medium     |
+| usm.protocols.authentication   | Authentication protocol used for MPv3 for defined user         | string | MD5          | [MD5, SHA, SHA2_512]   | medium     |

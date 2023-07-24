@@ -280,7 +280,17 @@ public class SnmpTrapSourceTask extends SourceTask implements CommandResponder {
     USM usm = new USM(sp, new OctetString("SNMP Connector"), 0);
     usm.setEngineDiscoveryEnabled(true);
     SecurityModels sm = SecurityModels.getInstance().addSecurityModel(usm);
-    if (Utils.noneNull(config.username, config.privacyPassphrase, config.authenticationPassphrase)) {
+    if (config.noAuthNoPrivEnabled) {
+      UsmUser uu = new UsmUser(
+              new OctetString(config.username),
+              null,
+              null,
+              null,
+              null
+      );
+      usm.addUser(uu);
+      log.info("Added user {} to handle MPv3 NoAuthNoPriv", config.username);
+    } else if (Utils.noneNull(config.username, config.privacyPassphrase, config.authenticationPassphrase)) {
       UsmUser uu = new UsmUser(
           new OctetString(config.username),
           convertAuthenticationProtocol(config.authenticationProtocol),
