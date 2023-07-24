@@ -70,6 +70,10 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   static final String USM_USERNAME_DOC = "The supported privacy protocols for MPv3";
   static final String USM_USERNAME_DEFAULT =  "";
 
+  public static final String USM_NO_AUTH_NO_PRIV_ENABLED_CONF = "USM.noauthnoprivenabled";
+  static final String USM_NO_AUTH_NO_PRIV_ENABLED_DOC = "Configuration property to enable MPv3 support without authentication and privacy";
+  static final boolean USM_NO_AUTH_NO_PRIV_ENABLED_DEFAULT = false;
+
   public static final String USM_AUTHENTICATION_PASSPHRASE = "usm.passphrases.authentication";
   static final String USM_AUTHENTICATION_PASSPHRASE_DOC = "Authentication passphrase for USM with MPv3";
   static final String USM_AUTHENTICATION_PASSPHRASE_DEFAULT =  "";
@@ -101,6 +105,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   public final int pollBackoffMs;
   public final boolean mpv3Enabled;
   public final String username;
+  public final boolean noAuthNoPrivEnabled;
   public final String privacyPassphrase;
   public final String authenticationPassphrase;
   public final AuthenticationProtocol authenticationProtocol;
@@ -123,6 +128,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
     this.mpv3Enabled = this.getBoolean(MPV3_ENABLED_CONF);
     this.collectSnmpMetrics = this.getBoolean(COLLECT_METRICS_SNMP);
     this.username = this.getString(USM_USERNAME);
+    this.noAuthNoPrivEnabled = this.getBoolean(USM_NO_AUTH_NO_PRIV_ENABLED_CONF);
     this.authenticationPassphrase = this.getString(USM_AUTHENTICATION_PASSPHRASE);
     this.privacyPassphrase = this.getString(USM_PRIVACY_PASSPHRASE);
     this.authenticationProtocol =  AuthenticationProtocol.valueOf(this.getString(USM_AUTHENTICATION_PROTOCOL).toUpperCase());
@@ -146,6 +152,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
 
         // MPv3 configs
         .define(USM_USERNAME, Type.STRING, USM_USERNAME_DEFAULT, Importance.MEDIUM, USM_USERNAME_DOC)
+        .define(USM_NO_AUTH_NO_PRIV_ENABLED_CONF, Type.BOOLEAN, USM_NO_AUTH_NO_PRIV_ENABLED_DEFAULT, Importance.MEDIUM, USM_NO_AUTH_NO_PRIV_ENABLED_DOC)
         .define(USM_AUTHENTICATION_PASSPHRASE, Type.STRING, USM_AUTHENTICATION_PASSPHRASE_DEFAULT, Importance.MEDIUM, USM_AUTHENTICATION_PASSPHRASE_DOC)
         .define(USM_PRIVACY_PASSPHRASE, Type.STRING, USM_PRIVACY_PASSPHRASE_DEFAULT, Importance.MEDIUM, USM_PRIVACY_PASSPHRASE_DOC)
         .define(USM_AUTHENTICATION_PROTOCOL, Type.STRING, USM_AUTHENTICATION_PROTOCOL_DEFAULT, ConfigDef.ValidString.in(authProtocols), Importance.MEDIUM, USM_AUTHENTICATION_PROTOCOL_DOC)
