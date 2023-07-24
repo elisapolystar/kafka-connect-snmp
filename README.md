@@ -37,7 +37,7 @@ Kafka related configuration properties can be deducted from [documentation](http
 | Name                           | Description                                                    | Type   | Default      | Valid Values           | Importance |
 |--------------------------------|----------------------------------------------------------------|--------|--------------|------------------------|------------|
 | usm.username                   | Username used for USM with MPv3                                | string |              |                        | medium     |
-| usm.noauthnoprivenabled        | 'true' if mpv3 is enabled without authentication and privacy   | boolean| false        | [true, false]          | medium     |
+| usm.noAuthNoPrivEnabled        | 'true' if mpv3 is enabled without authentication and privacy   | boolean| false        | [true, false]          | medium     |
 | usm.passphrases.privacy        | Privacy passphrase for USM with MPv3                           | string |              |                        | medium     |
 | usm.passphrases.authentication | Authentication passphrase for USM with MPv3                    | string |              |                        | medium     |
 | usm.protocols.privacy          | Privacy protocol used for MPv3 for defined user                | string | AES128       | [DES3, AES128, AES256] | medium     |
