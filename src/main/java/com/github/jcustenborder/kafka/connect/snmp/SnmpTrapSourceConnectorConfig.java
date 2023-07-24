@@ -70,7 +70,7 @@ public class SnmpTrapSourceConnectorConfig extends AbstractConfig {
   static final String USM_USERNAME_DOC = "The supported privacy protocols for MPv3";
   static final String USM_USERNAME_DEFAULT =  "";
 
-  public static final String USM_NO_AUTH_NO_PRIV_ENABLED_CONF = "usm.noauthnoprivenabled";
+  public static final String USM_NO_AUTH_NO_PRIV_ENABLED_CONF = "usm.noAuthNoPrivEnabled";
   static final String USM_NO_AUTH_NO_PRIV_ENABLED_DOC = "Configuration property to enable MPv3 support without authentication and privacy";
   static final boolean USM_NO_AUTH_NO_PRIV_ENABLED_DEFAULT = false;
 
