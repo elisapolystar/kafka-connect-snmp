@@ -1,7 +1,7 @@
 ![Build](https://github.com/elisaautomate/kafka-connect-snmp/workflows/Build/badge.svg)
 
 # Introduction
-
+ 
 `kafka-connect-snmp` connector is used to receive SNMP traps and convert them to a record in Kafka. 
 
 Supported MPv3 standards are
